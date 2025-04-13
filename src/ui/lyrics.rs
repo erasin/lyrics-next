@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use crate::{
     client::get_lyrics_client,
+    config::get_config,
     error::LyricsError,
     song::{
         LyricParser, LyricsLine, PlayTime, PlayerAction, SongInfo, get_current_song,
@@ -27,12 +28,22 @@ pub(super) struct LyricsScreen {
 impl LyricsScreen {
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
         // 创建垂直布局
-        let [header_chunk, lyric_chunk, gauge_chunk] = Layout::new(
+
+        let header_height = match get_config().ui.title {
+            true => Constraint::Length(4),
+            false => Constraint::Length(0),
+        };
+        let progress_height = match get_config().ui.progress_bar {
+            true => Constraint::Length(1),
+            false => Constraint::Length(0),
+        };
+
+        let [header_chunk, lyric_chunk, progress_chunk] = Layout::new(
             Direction::Vertical,
             [
-                Constraint::Length(4), // 标题栏目
-                Constraint::Min(1),    // 歌词区域
-                Constraint::Length(1), // 进度
+                header_height,      // 标题栏目
+                Constraint::Min(1), // 歌词区域
+                progress_height,    // 进度
             ],
         )
         .areas(area);
@@ -42,7 +53,7 @@ impl LyricsScreen {
 
         self.render_title(header_chunk, buf);
         self.render_lyric(lyric_chunk, buf);
-        self.render_gauge(gauge_chunk, buf);
+        self.render_progress(progress_chunk, buf);
     }
 
     fn get_window_title(&self) -> String {
@@ -77,7 +88,7 @@ impl LyricsScreen {
     }
 
     /// 进度
-    pub fn render_gauge(&self, area: Rect, buf: &mut Buffer) {
+    pub fn render_progress(&self, area: Rect, buf: &mut Buffer) {
         if self.state.song.title.is_empty() {
             return;
         }
@@ -120,16 +131,15 @@ impl LyricsScreen {
         for (i, line) in state.lyrics[start..end].iter().enumerate() {
             let is_current = start + i == state.find_current_line().unwrap_or(0);
 
-            #[cfg(debug_assertions)]
-            let line_text = format!(
-                "[{:0>2}:{:0>2}] {}",
-                (line.timestamp_start / 60.0).floor() as u64,
-                (line.timestamp_start % 60.0).floor() as u64,
-                line.text
-            );
-
-            #[cfg(not(debug_assertions))]
-            let line_text = format!("{}", line.text);
+            let line_text = match get_config().ui.time {
+                true => format!(
+                    "[{:0>2}:{:0>2}] {}",
+                    (line.timestamp_start / 60.0).floor() as u64,
+                    (line.timestamp_start % 60.0).floor() as u64,
+                    line.text
+                ),
+                false => line.text.clone(),
+            };
 
             let style = if is_current {
                 LINE_TARGET_STYLE

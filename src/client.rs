@@ -8,7 +8,10 @@ use reqwest::RequestBuilder;
 use ropey::Rope;
 use serde::de::DeserializeOwned;
 
-use crate::{cache::CacheManager, error::LyricsError, song::SongInfo, utils::normalize_text};
+use crate::{
+    cache::CacheManager, config::get_config, error::LyricsError, song::SongInfo,
+    utils::normalize_text,
+};
 
 mod kugou;
 mod netease;
@@ -18,9 +21,15 @@ mod qqmusic;
 /// 歌词抓取器
 #[async_trait]
 trait LyricsFetcher: Send + Sync {
+    // async fn search_lyric(&self, song: &SongInfo) -> Result<ListLrc, LyricsError>;
     async fn fetch_lyric(&self, song: &SongInfo) -> Result<String, LyricsError>;
     fn source_name(&self) -> &'static str;
 }
+
+// struct ListLrc {
+//     sources: String,
+//     title: String,
+// }
 
 // 公共基础结构
 struct BaseFetcher {
@@ -76,13 +85,21 @@ pub struct LyricsClient {
 
 impl LyricsClient {
     fn new() -> Self {
+        let mut fetchers: Vec<Box<dyn LyricsFetcher>> = Vec::new();
+
+        let config = &get_config().sources;
+        if config.netease {
+            fetchers.push(Box::new(NeteaseFetcher::default()));
+        }
+        if config.qq {
+            fetchers.push(Box::new(QQMusicFetcher::default()));
+        }
+        if config.kugou {
+            fetchers.push(Box::new(KugouFetcher::default()));
+        }
+
         Self {
-            fetchers: vec![
-                Box::new(NeteaseFetcher::default()),
-                Box::new(QQMusicFetcher::default()),
-                Box::new(KugouFetcher::default()),
-                // Box::new(OvhFetcher::default()),
-            ],
+            fetchers,
             cache: CacheManager::new(),
         }
     }

@@ -1,13 +1,9 @@
 use std::path::PathBuf;
 
-use dirs::home_dir;
 use ropey::Rope;
 use sanitize_filename::sanitize;
 
-use crate::{error::LyricsError, song::SongInfo};
-
-/// 缓存文件
-pub const CACHE_DIR: &str = ".lyrics";
+use crate::{config::cache_path, error::LyricsError, song::SongInfo};
 
 // 缓存管理模块
 #[derive(Debug, Clone, Default)]
@@ -17,14 +13,9 @@ pub struct CacheManager {
 
 impl CacheManager {
     pub fn new() -> Self {
-        let mut path = home_dir().expect("Failed to get home directory");
-        path.push(CACHE_DIR);
-
-        if !path.exists() {
-            std::fs::create_dir_all(&path).unwrap();
+        Self {
+            base_dir: cache_path(),
         }
-
-        Self { base_dir: path }
     }
 
     fn lyrics_name(&self, song: &SongInfo) -> PathBuf {

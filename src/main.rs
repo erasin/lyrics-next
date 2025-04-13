@@ -1,31 +1,24 @@
 use std::io::Write;
-use std::{
-    fs::{self, OpenOptions},
-    path::PathBuf,
-};
+use std::{fs::OpenOptions, path::PathBuf};
 
 use anyhow::Result;
 use chrono::Local;
 use clap::Parser;
-use lyrics_next::cache::CACHE_DIR;
 use lyrics_next::client::get_lyrics_client;
+use lyrics_next::config::{Config, get_config, log_path};
 use lyrics_next::ui::App;
 
 #[derive(Parser, Debug)]
-#[clap(version, about)]
-struct Args;
+#[command(author, version, about, long_about = None)]
+struct Args {
+    #[arg(short, long)]
+    config: Option<PathBuf>,
+    // line
+}
 
 pub fn init_logger() -> Result<()> {
     // 日志文件路径（用户目录下的 .lyrics/logs/app.log）
-    let log_dir = dirs::home_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join(CACHE_DIR);
-
-    if !log_dir.exists() {
-        fs::create_dir_all(&log_dir).unwrap();
-    }
-
-    let log_file = log_dir.join("lyrics.log");
+    let log_file = log_path();
 
     #[cfg(debug_assertions)]
     let level = log::LevelFilter::Trace;
@@ -62,7 +55,16 @@ async fn main() -> Result<()> {
     init_logger()?;
     log::info!("Starting lyric application...");
     get_lyrics_client();
-    let _args = Args::parse();
+    let args = Args::parse();
+
+    if let Some(config_path) = args.config {
+        Config::load(&config_path)?;
+    } else {
+        Config::load_default()?;
+    }
+
+    log::debug!("config: {:?}", get_config());
+
     let mut terminal = ratatui::init();
     let app_result = App::default().run(&mut terminal).await;
     ratatui::restore();

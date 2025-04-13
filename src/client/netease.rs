@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use itertools::Itertools;
 use serde::Deserialize;
 
 use super::{BaseFetcher, LyricsFetcher};
@@ -61,8 +62,7 @@ impl LyricsFetcher for NeteaseFetcher {
         let search_url = "https://music.163.com/api/search/get/";
 
         let request = self.base.client.get(search_url).query(&[
-            // ("s", format!("{} {}", song.title, song.artist)),
-            ("s", song.title.as_str()),
+            ("s", format!("{} {}", song.title, song.artist).as_str()),
             ("type", "1"),
             ("limit", "10"), // song_id 1, album_id 10 playlist_id 1000
             ("offset", "0"),

@@ -29,6 +29,5 @@ key            | action
 
 **TODO**
 
-- config 配置
 - ui 搜索列表
   - 手动选择更新

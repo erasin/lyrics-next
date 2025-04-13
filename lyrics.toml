@@ -1,0 +1,11 @@
+# ~/.config/lyrics/lyrics.toml
+# 
+[ui]
+title = true
+time = false
+progress_bar = true
+
+[sources]
+netease = true
+qq = true
+kugou = true
