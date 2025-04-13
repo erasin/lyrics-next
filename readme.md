@@ -5,22 +5,30 @@
 
 **KeyMap**
 
-key    | action 
-------:|------
-q      |  退出
-esc    |  退出
-d      |  删除歌词
-delete |  删除歌词
-left   |  后退
-right  |  前进
-space  |  暂停/播放
-n      |  下一曲
-p      |  上一曲
+key            | action 
+--------------:|------
+`h` / `?`      | 帮助
+`q` / `ESC`    | 退出
+`d` / `delete` |  删除歌词
+`left`         |  后退
+`right`        |  前进
+`space`        |  暂停/播放
+`n`            |  下一曲
+`p`            |  上一曲
+`s`            | 搜索
 
+**Search key**
+
+key            | action 
+--------------:|------
+`q` / `ESC`    | 退出到歌词界面.
+`h` / `?`      | 帮助.
+`n` / `Down`   |下一个
+`p` / `Up`     |上一个
+`l` / `Enter`  |上一个
 
 **TODO**
 
 - config 配置
 - ui 搜索列表
   - 手动选择更新
-- cache 管理

@@ -25,8 +25,10 @@ impl HelpScreen {
             ("d | Delete ", " 删除当前歌词"),
             ("      Left ", " 快退"),
             ("     Right ", "快进"),
+            ("     Space", "暂停播放"),
             ("     n | j ", "下一曲"),
             ("     p | k ", "上一曲"),
+            ("     s  ", "搜索"),
         ];
         help(lines).render(lyric_chunk, buf);
 

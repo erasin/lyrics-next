@@ -25,7 +25,7 @@ pub fn init_logger() -> Result<()> {
         fs::create_dir_all(&log_dir).unwrap();
     }
 
-    let log_file = log_dir.join("lyric.log");
+    let log_file = log_dir.join("lyrics.log");
 
     #[cfg(debug_assertions)]
     let level = log::LevelFilter::Trace;
