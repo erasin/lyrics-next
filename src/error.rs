@@ -1,8 +1,4 @@
-use std::sync::{RwLock, RwLockWriteGuard};
-
 use thiserror::Error;
-
-use crate::config::Config;
 
 #[derive(Error, Debug)]
 pub enum LyricsError {
