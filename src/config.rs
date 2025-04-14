@@ -1,21 +1,18 @@
 use anyhow::{Context, Result};
 use serde::Deserialize;
-use std::{fs, path::PathBuf, sync::OnceLock};
+use std::{
+    fs,
+    path::PathBuf,
+    sync::{OnceLock, RwLock},
+};
 
 use crate::{error::LyricsError, utils::ensure_parent_dir};
 
 /// config
-static CONFIG: OnceLock<Config> = OnceLock::new();
+static CONFIG: OnceLock<RwLock<Config>> = OnceLock::new();
 
-pub fn get_config() -> &'static Config {
-    CONFIG.get_or_init(Config::default)
-}
-
-fn set_config(conf: Config) -> Result<(), LyricsError> {
-    CONFIG
-        .set(conf)
-        .expect("Failed to initialize global config");
-    Ok(())
+pub fn get_config() -> &'static RwLock<Config> {
+    CONFIG.get_or_init(|| RwLock::new(Config::default()))
 }
 
 #[derive(Debug, Deserialize)]
@@ -57,23 +54,28 @@ impl Default for Config {
 }
 
 impl Config {
-    pub fn load_default() -> Result<(), LyricsError> {
-        let config_path = config_path();
-        if config_path.exists() {
-            Self::load(&config_path)
+    pub fn load_or_default(path: Option<PathBuf>) -> Result<(), LyricsError> {
+        let config_path = match path {
+            Some(p) => p,
+            None => config_path(),
+        };
+
+        let config: Config = if config_path.exists() {
+            let config_content = fs::read_to_string(&config_path).with_context(|| {
+                format!("Failed to read config file: {}", config_path.display())
+            })?;
+
+            toml::from_str(&config_content).with_context(|| {
+                format!("Failed to parse config file: {}", config_path.display())
+            })?
         } else {
-            set_config(Self::default())
-        }
-    }
+            Self::default()
+        };
 
-    pub fn load(config_path: &PathBuf) -> Result<(), LyricsError> {
-        let config_content = fs::read_to_string(&config_path)
-            .with_context(|| format!("Failed to read config file: {}", config_path.display()))?;
+        let mut c = get_config().write().expect("Get config failed.");
+        *c = config;
 
-        let config: Config = toml::from_str(&config_content)
-            .with_context(|| format!("Failed to parse config file: {}", config_path.display()))?;
-
-        set_config(config)
+        Ok(())
     }
 }
 

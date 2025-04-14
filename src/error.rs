@@ -1,4 +1,8 @@
+use std::sync::{RwLock, RwLockWriteGuard};
+
 use thiserror::Error;
+
+use crate::config::Config;
 
 #[derive(Error, Debug)]
 pub enum LyricsError {
@@ -20,8 +24,6 @@ pub enum LyricsError {
     #[error("base64 error: {0}")]
     DecodeError(#[from] base64::DecodeError),
 
-    // #[error("error: {0}")]
-    // ConfigError(#[from] toml::Error),
     #[error("No active media player found")]
     NoPlayerFound,
 

@@ -56,13 +56,7 @@ async fn main() -> Result<()> {
     log::info!("Starting lyric application...");
     get_lyrics_client();
     let args = Args::parse();
-
-    if let Some(config_path) = args.config {
-        Config::load(&config_path)?;
-    } else {
-        Config::load_default()?;
-    }
-
+    Config::load_or_default(args.config)?;
     log::debug!("config: {:?}", get_config());
 
     let mut terminal = ratatui::init();

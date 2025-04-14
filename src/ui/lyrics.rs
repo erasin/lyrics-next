@@ -28,12 +28,14 @@ pub(super) struct LyricsScreen {
 impl LyricsScreen {
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
         // 创建垂直布局
+        //
+        let config = &get_config().read().unwrap().ui;
 
-        let header_height = match get_config().ui.title {
+        let header_height = match config.title {
             true => Constraint::Length(4),
             false => Constraint::Length(0),
         };
-        let progress_height = match get_config().ui.progress_bar {
+        let progress_height = match config.progress_bar {
             true => Constraint::Length(1),
             false => Constraint::Length(0),
         };
@@ -131,7 +133,7 @@ impl LyricsScreen {
         for (i, line) in state.lyrics[start..end].iter().enumerate() {
             let is_current = start + i == state.find_current_line().unwrap_or(0);
 
-            let line_text = match get_config().ui.time {
+            let line_text = match get_config().read().unwrap().ui.time {
                 true => format!(
                     "[{:0>2}:{:0>2}] {}",
                     (line.timestamp_start / 60.0).floor() as u64,

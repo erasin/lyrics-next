@@ -87,7 +87,7 @@ impl LyricsClient {
     fn new() -> Self {
         let mut fetchers: Vec<Box<dyn LyricsFetcher>> = Vec::new();
 
-        let config = &get_config().sources;
+        let config = &get_config().read().unwrap().sources;
         if config.netease {
             fetchers.push(Box::new(NeteaseFetcher::default()));
         }

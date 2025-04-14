@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use itertools::Itertools;
 use serde::Deserialize;
 
 use super::{BaseFetcher, LyricsFetcher};
