@@ -166,12 +166,14 @@ impl LyricsScreen {
 
     pub async fn handle_key_event(&mut self, key_event: &KeyEvent) {
         match key_event.code {
-            KeyCode::Char('d') | KeyCode::Delete => self.delete(),
-            KeyCode::Left => self.state.action(PlayerAction::Left),
-            KeyCode::Right => self.state.action(PlayerAction::Right),
-            KeyCode::Char(' ') => self.state.action(PlayerAction::Toggle),
-            KeyCode::Char('n') | KeyCode::Char('j') => self.state.action(PlayerAction::Next),
-            KeyCode::Char('p') | KeyCode::Char('k') => self.state.action(PlayerAction::Previous),
+            KeyCode::Char('d') | KeyCode::Delete => self.delete().await,
+            KeyCode::Left => self.state.action(PlayerAction::Left).await,
+            KeyCode::Right => self.state.action(PlayerAction::Right).await,
+            KeyCode::Char(' ') => self.state.action(PlayerAction::Toggle).await,
+            KeyCode::Char('n') | KeyCode::Char('j') => self.state.action(PlayerAction::Next).await,
+            KeyCode::Char('p') | KeyCode::Char('k') => {
+                self.state.action(PlayerAction::Previous).await
+            }
             _ => {}
         }
     }
@@ -187,8 +189,8 @@ impl LyricsScreen {
     }
 
     /// 删除
-    fn delete(&mut self) {
-        self.state.delete();
+    async fn delete(&mut self) {
+        self.state.delete().await;
     }
 
     pub fn reset(&mut self) {
@@ -263,7 +265,7 @@ impl LyricState {
 
     async fn try_update(&mut self) -> Result<(), LyricsError> {
         // 获取当前播放器和歌曲信息
-        let song = match get_current_song() {
+        let song = match get_current_song().await {
             Ok(s) => s,
             Err(LyricsError::NoPlayerFound) => {
                 self.reset();
@@ -277,11 +279,11 @@ impl LyricState {
             self.reset();
             self.song = song.clone();
             let doc = get_lyrics_client().get_lyrics(&song).await?;
-            self.lyrics = LyricParser::parse(&doc, song.duration)?;
+            self.lyrics = LyricParser::parse(&doc, song.duration).await?;
         }
 
         // 获取当前播放进度
-        self.play_time = get_current_time_song(self.play_time.clone())?;
+        self.play_time = get_current_time_song(self.play_time.clone()).await?;
         self.progress = self.play_time.current_time / song.duration;
 
         // 更新滚动位置
@@ -319,15 +321,15 @@ impl LyricState {
         }
     }
 
-    pub fn delete(&mut self) {
+    pub async fn delete(&mut self) {
         if !self.song.title.is_empty() {
-            get_lyrics_client().cache.delete(&self.song);
+            get_lyrics_client().cache.delete(&self.song).await;
             self.reset();
         }
     }
 
-    pub fn action(&self, action: PlayerAction) {
-        if let Err(e) = player_action(action, &self.song) {
+    pub async fn action(&self, action: PlayerAction) {
+        if let Err(e) = player_action(action, &self.song).await {
             log::error!("Action: {e}");
         }
     }

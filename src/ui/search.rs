@@ -171,7 +171,7 @@ impl SearchState {
 
     pub async fn try_update(&mut self) -> Result<(), LyricsError> {
         // 获取当前播放器和歌曲信息
-        let song = match get_current_song() {
+        let song = match get_current_song().await {
             Ok(s) => s,
             Err(LyricsError::NoPlayerFound) => {
                 self.reset();

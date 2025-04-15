@@ -56,7 +56,7 @@ fn is_valid_player(player: &Player) -> bool {
 }
 
 /// 获取 当前播放的 mpris player
-fn get_player() -> Result<Player, LyricsError> {
+async fn get_player() -> Result<Player, LyricsError> {
     let player_finder = PlayerFinder::new()?;
     let player = player_finder
         .find_all()?
@@ -69,8 +69,8 @@ fn get_player() -> Result<Player, LyricsError> {
 }
 
 /// 获取当前播放歌曲
-pub fn get_current_song() -> Result<SongInfo, LyricsError> {
-    let player = get_player()?;
+pub async fn get_current_song() -> Result<SongInfo, LyricsError> {
+    let player = get_player().await?;
     let metadata = player.get_metadata()?;
 
     // track_id 有些不支持
@@ -101,8 +101,8 @@ pub struct PlayTime {
 }
 
 /// 获取当前歌曲的播放时间
-pub fn get_current_time_song(st: PlayTime) -> Result<PlayTime, LyricsError> {
-    let player = get_player()?;
+pub async fn get_current_time_song(st: PlayTime) -> Result<PlayTime, LyricsError> {
+    let player = get_player().await?;
     let mut st = st;
 
     match player.get_position().map(|d| d.as_secs_f64()) {
@@ -132,8 +132,8 @@ pub enum PlayerAction {
     Previous,
 }
 
-pub fn player_action(action: PlayerAction, song: &SongInfo) -> Result<(), LyricsError> {
-    let player = get_player()?;
+pub async fn player_action(action: PlayerAction, song: &SongInfo) -> Result<(), LyricsError> {
+    let player = get_player().await?;
 
     match action {
         PlayerAction::Toggle => player.play_pause()?,
@@ -171,13 +171,13 @@ pub struct LyricsLine {
 pub struct LyricParser;
 
 impl LyricParser {
-    pub fn parse(doc: &Rope, song_duration: f64) -> Result<Vec<LyricsLine>, LyricsError> {
+    pub async fn parse(doc: &Rope, song_duration: f64) -> Result<Vec<LyricsLine>, LyricsError> {
         let mut entries = Vec::new();
 
         // 第一阶段：收集所有时间标签和文本
         for line in doc.lines() {
             let line_str = line.to_string();
-            if let Ok((time_tags, text)) = Self::parse_line(&line_str) {
+            if let Ok((time_tags, text)) = Self::parse_line(&line_str).await {
                 for ts in time_tags {
                     entries.push((ts, text.clone()));
                 }
@@ -209,7 +209,7 @@ impl LyricParser {
         }
     }
 
-    fn parse_line(line: &str) -> Result<(Vec<f64>, String), LyricsError> {
+    async fn parse_line(line: &str) -> Result<(Vec<f64>, String), LyricsError> {
         let mut line = line.trim();
         let mut time_tags = Vec::new();
 
@@ -223,7 +223,7 @@ impl LyricParser {
             // 余下为内容
             line = &line[end_idx + 1..];
 
-            match Self::parse_time(time_str) {
+            match Self::parse_time(time_str).await {
                 Some(time) => time_tags.push(time),
                 None => return Err(LyricsError::InvalidTimeFormat),
             }
@@ -235,7 +235,7 @@ impl LyricParser {
         Ok((time_tags, text))
     }
 
-    fn parse_time(s: &str) -> Option<f64> {
+    async fn parse_time(s: &str) -> Option<f64> {
         let parts: Vec<&str> = s.split(&[':', '.']).collect();
         if parts.len() < 2 {
             return None;

@@ -52,10 +52,9 @@ impl CacheManager {
         Ok(())
     }
 
-    pub fn delete(&self, song: &SongInfo) {
+    pub async fn delete(&self, song: &SongInfo) {
         let path = self.lyrics_name(song);
-        // tokio::fs::remove_file(path).await?
-        match std::fs::remove_file(path) {
+        match tokio::fs::remove_file(path).await {
             Ok(_) => {}
             Err(e) => log::error!("delete file {} failed {}", song.title, e),
         }
