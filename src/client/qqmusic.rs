@@ -3,7 +3,7 @@ use base64::{Engine, prelude::BASE64_STANDARD};
 use serde::Deserialize;
 
 use super::{BaseFetcher, LyricsFetcher, LyricsItem};
-use crate::{error::LyricsError, song::SongInfo};
+use crate::{client::get_first, error::LyricsError, song::SongInfo};
 
 #[derive(Debug, Deserialize)]
 struct Response {
@@ -48,14 +48,6 @@ pub(super) struct QQMusicFetcher {
 #[async_trait]
 impl LyricsFetcher for QQMusicFetcher {
     async fn search_lyric(&self, song: &SongInfo) -> Result<Vec<LyricsItem>, LyricsError> {
-        Err(LyricsError::NoLyricsFound)
-    }
-    async fn download_lyric(&self, item: &LyricsItem) -> Result<String, LyricsError> {
-        Err(LyricsError::NoLyricsFound)
-    }
-    async fn fetch_lyric(&self, song: &SongInfo) -> Result<String, LyricsError> {
-        log::debug!("QQ search");
-
         // 1. 搜索歌曲
         let search_url = "https://c.y.qq.com/soso/fcgi-bin/client_search_cp";
         let request= self
@@ -79,33 +71,48 @@ impl LyricsFetcher for QQMusicFetcher {
         let data = self.base.fetch_with_retry::<Response>(request).await?;
         log::debug!("Get song: {:?}, info: {:?}", data, song);
 
-        let song_mid = data
+        let list: Vec<LyricsItem> = data
             .data
             .song
             .list
             .into_iter()
-            .filter(|s| s.songname == song.title || s.songname.contains(&song.title))
-            .filter(|s| {
-                if song.artist.is_empty() {
-                    true
-                } else {
-                    s.singer.iter().find(|&a| a.name == song.artist).is_some()
-                }
-            })
-            .filter(|s| {
-                if song.album.is_empty() {
-                    true
-                } else {
-                    let a = s.albumname.to_lowercase();
-                    let b = song.album.to_lowercase();
-                    a == b || a.contains(&b)
-                }
-            })
-            .next()
-            .map(|s| s.songmid)
-            .ok_or(LyricsError::NoLyricsFound)?;
+            .map(|s| {
+                let source = self.source_name().into();
+                let title = s.songname;
+                let artist = s
+                    .singer
+                    .iter()
+                    .map(|aa| aa.name.clone())
+                    .collect::<Vec<String>>()
+                    .join(" ");
+                let album = s.albumname;
+                let params = vec![("songmid".to_string(), s.songmid)];
 
-        log::debug!("song mid : {song_mid}");
+                LyricsItem {
+                    source,
+                    title,
+                    artist,
+                    album,
+                    params,
+                }
+            })
+            .collect();
+
+        log::debug!("Get List: {:?}", list);
+
+        if !list.is_empty() {
+            Ok(list)
+        } else {
+            Err(LyricsError::NoLyricsFound)
+        }
+    }
+
+    async fn download_lyric(&self, item: &LyricsItem) -> Result<String, LyricsError> {
+        let mut params = item.params.clone();
+        params.append(&mut vec![
+            ("format".to_string(), "json".to_string()),
+            ("g_tk".to_string(), "5381".to_string()),
+        ]);
 
         // 2. 获取歌词
         let lyrics_url = "https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg";
@@ -113,11 +120,7 @@ impl LyricsFetcher for QQMusicFetcher {
             .base
             .client
             .get(lyrics_url)
-            .query(&[
-                ("songmid", song_mid.as_str()),
-                ("format", "json"),
-                ("g_tk", "5381"),
-            ])
+            .query(&params)
             .header("Referer", "https://y.qq.com/n/ryqq/player")
             .header("Host", "c.y.qq.com")
             .header("Origin", "https://y.qq.com");
@@ -134,6 +137,42 @@ impl LyricsFetcher for QQMusicFetcher {
             return Err(LyricsError::NoLyricsFound);
         }
         Ok(re)
+    }
+    async fn fetch_lyric(&self, song: &SongInfo) -> Result<String, LyricsError> {
+        log::debug!("QQ search");
+
+        // let song_mid = data
+        //     .data
+        //     .song
+        //     .list
+        //     .into_iter()
+        //     .filter(|s| s.songname == song.title || s.songname.contains(&song.title))
+        //     .filter(|s| {
+        //         if song.artist.is_empty() {
+        //             true
+        //         } else {
+        //             s.singer.iter().find(|&a| a.name == song.artist).is_some()
+        //         }
+        //     })
+        //     .filter(|s| {
+        //         if song.album.is_empty() {
+        //             true
+        //         } else {
+        //             let a = s.albumname.to_lowercase();
+        //             let b = song.album.to_lowercase();
+        //             a == b || a.contains(&b)
+        //         }
+        //     })
+        //     .next()
+        //     .map(|s| s.songmid)
+        //     .ok_or(LyricsError::NoLyricsFound)?;
+
+        // log::debug!("song mid : {song_mid}");
+
+        let list = self.search_lyric(song).await?;
+        let item = get_first(list, song)?;
+        log::debug!("Get song: {:?} info: {:?}", item, song);
+        self.download_lyric(&item).await
     }
 
     fn source_name(&self) -> &'static str {

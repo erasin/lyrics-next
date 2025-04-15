@@ -6,7 +6,7 @@ use netease::NeteaseFetcher;
 use qqmusic::QQMusicFetcher;
 use reqwest::RequestBuilder;
 use ropey::Rope;
-use serde::{Serialize, de::DeserializeOwned};
+use serde::de::DeserializeOwned;
 
 use crate::{
     cache::CacheManager, config::get_config, error::LyricsError, song::SongInfo,
@@ -94,15 +94,18 @@ impl LyricsClient {
         let mut fetchers: Vec<Box<dyn LyricsFetcher>> = Vec::new();
 
         let config = &get_config().read().unwrap().sources;
+
+        log::debug!("fetcher config: {:?}", config);
+
         if config.netease {
             fetchers.push(Box::new(NeteaseFetcher::default()));
         }
-        // if config.qq {
-        //     fetchers.push(Box::new(QQMusicFetcher::default()));
-        // }
-        // if config.kugou {
-        //     fetchers.push(Box::new(KugouFetcher::default()));
-        // }
+        if config.qq {
+            fetchers.push(Box::new(QQMusicFetcher::default()));
+        }
+        if config.kugou {
+            fetchers.push(Box::new(KugouFetcher::default()));
+        }
 
         Self {
             fetchers,
@@ -178,4 +181,55 @@ impl LyricsClient {
 }
 
 // 检测两者是否类似
-// fn ab_like(a: String, b: String) -> bool { }
+
+pub fn get_first(list: Vec<LyricsItem>, song: &SongInfo) -> Result<LyricsItem, LyricsError> {
+    let list: Vec<LyricsItem> = list
+        .into_iter()
+        .filter(|s| s.title == song.title || s.title.contains(&song.title))
+        .collect();
+
+    if list.is_empty() {
+        return Err(LyricsError::NoLyricsFound);
+    }
+
+    let list: Vec<LyricsItem> = if !song.artist.is_empty() {
+        list.into_iter()
+            .filter(|s| {
+                if song.artist.is_empty() {
+                    true
+                } else {
+                    s.artist == song.artist || s.artist.contains(&song.artist)
+                }
+            })
+            .collect()
+    } else {
+        list
+    };
+
+    if list.is_empty() {
+        return Err(LyricsError::NoLyricsFound);
+    }
+
+    let list: Vec<LyricsItem> = if !song.album.is_empty() {
+        list.into_iter()
+            .filter(|s| {
+                if song.album.is_empty() {
+                    true
+                } else {
+                    let a = s.album.to_lowercase();
+                    let b = song.album.to_lowercase();
+                    a == b || a.contains(&b)
+                }
+            })
+            .collect()
+    } else {
+        list
+    };
+
+    if list.is_empty() {
+        return Err(LyricsError::NoLyricsFound);
+    }
+
+    let first = list.first().ok_or(LyricsError::NoLyricsFound)?;
+    Ok(first.clone())
+}

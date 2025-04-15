@@ -13,10 +13,10 @@ pub(super) struct OvhFetcher {
 
 #[async_trait]
 impl LyricsFetcher for OvhFetcher {
-    async fn search_lyric(&self, song: &SongInfo) -> Result<Vec<LyricsItem>, LyricsError> {
+    async fn search_lyric(&self, _song: &SongInfo) -> Result<Vec<LyricsItem>, LyricsError> {
         Err(LyricsError::NoLyricsFound)
     }
-    async fn download_lyric(&self, item: &LyricsItem) -> Result<String, LyricsError> {
+    async fn download_lyric(&self, _item: &LyricsItem) -> Result<String, LyricsError> {
         Err(LyricsError::NoLyricsFound)
     }
     async fn fetch_lyric(&self, song: &SongInfo) -> Result<String, LyricsError> {

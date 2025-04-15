@@ -72,6 +72,8 @@ impl Config {
             Self::default()
         };
 
+        log::debug!("config: {:?}", config);
+
         let mut c = get_config().write().expect("Get config failed.");
         *c = config;
 
@@ -79,10 +81,13 @@ impl Config {
     }
 }
 
+const CONFIG_PATH: &str = ".lyrics";
+
 pub fn config_path() -> PathBuf {
-    let config_dir = dirs::config_dir()
+    let config_dir = dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join("lyrics/lyrics.toml");
+        .join(CONFIG_PATH)
+        .join("lyrics.toml");
     ensure_parent_dir(&config_dir);
     config_dir
 }
@@ -90,7 +95,8 @@ pub fn config_path() -> PathBuf {
 pub fn log_path() -> PathBuf {
     let log_file = dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join(".lyrics/lyrics.log");
+        .join(CONFIG_PATH)
+        .join("lyrics.log");
     ensure_parent_dir(&log_file);
     log_file
 }
@@ -98,7 +104,7 @@ pub fn log_path() -> PathBuf {
 pub fn cache_path() -> PathBuf {
     let cache_dir = dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join(".lyrics");
+        .join(CONFIG_PATH);
     ensure_parent_dir(&cache_dir);
     cache_dir
 }

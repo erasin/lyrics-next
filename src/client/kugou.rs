@@ -3,7 +3,7 @@ use base64::{Engine, prelude::BASE64_STANDARD};
 use serde::Deserialize;
 
 use super::{BaseFetcher, LyricsFetcher, LyricsItem};
-use crate::{error::LyricsError, song::SongInfo};
+use crate::{client::get_first, error::LyricsError, song::SongInfo};
 
 #[derive(Debug, Deserialize)]
 struct SearchResponse {
@@ -65,14 +65,6 @@ impl KugouFetcher {
 #[async_trait]
 impl LyricsFetcher for KugouFetcher {
     async fn search_lyric(&self, song: &SongInfo) -> Result<Vec<LyricsItem>, LyricsError> {
-        Err(LyricsError::NoLyricsFound)
-    }
-    async fn download_lyric(&self, item: &LyricsItem) -> Result<String, LyricsError> {
-        Err(LyricsError::NoLyricsFound)
-    }
-    async fn fetch_lyric(&self, song: &SongInfo) -> Result<String, LyricsError> {
-        log::debug!("kugou start ");
-
         // 1. 搜索歌曲
         let search_url = "http://mobilecdn.kugou.com/api/v3/search/song";
         let request = self.base.client.get(search_url).query(&[
@@ -136,24 +128,46 @@ impl LyricsFetcher for KugouFetcher {
         let data: LyricResponse = self.base.fetch_with_retry(request).await?;
         log::debug!("lyric list: {:?}", data);
 
-        let lyric = data
+        let list: Vec<LyricsItem> = data
             .candidates
             .into_iter()
-            .filter(|s| s.song == song.title)
-            .filter(|s| {
-                if song.artist.is_empty() {
-                    true
-                } else {
-                    let a = s.singer.to_lowercase();
-                    let b = song.artist.to_lowercase();
-                    a == b || a.contains(&b)
+            .map(|s| {
+                let source = self.source_name().into();
+                let title = s.song;
+                let artist = s.singer;
+                let album = search.album_name.clone();
+                let params = vec![
+                    ("accesskey".to_string(), s.accesskey),
+                    ("id".to_string(), s.download_id),
+                ];
+
+                LyricsItem {
+                    source,
+                    title,
+                    artist,
+                    album,
+                    params,
                 }
             })
-            .next()
-            .map(|s| s)
-            .ok_or(LyricsError::NoLyricsFound)?;
+            .collect();
 
-        log::debug!("Down id: {} , {}", lyric.download_id, lyric.accesskey);
+        log::debug!("Get List: {:?}", list);
+
+        if !list.is_empty() {
+            Ok(list)
+        } else {
+            Err(LyricsError::NoLyricsFound)
+        }
+    }
+
+    async fn download_lyric(&self, item: &LyricsItem) -> Result<String, LyricsError> {
+        let mut params = item.params.clone();
+        params.append(&mut vec![
+            ("ver".to_string(), "1".to_string()),
+            ("client".to_string(), "pc".to_string()),
+            ("fmt".to_string(), "lrc".to_string()),
+            ("charset".to_string(), "utf8".to_string()),
+        ]);
 
         // 3. 下载
         let lyric_download_url = "http://lyrics.kugou.com/download";
@@ -161,14 +175,7 @@ impl LyricsFetcher for KugouFetcher {
             .base
             .client
             .get(lyric_download_url)
-            .query(&[
-                ("ver", "1"),
-                ("client", "pc"),
-                ("fmt", "lrc"),
-                ("charset", "utf8"),
-                ("accesskey", lyric.accesskey.as_str()),
-                ("id", lyric.download_id.as_str()),
-            ])
+            .query(&params)
             .header("User-Agent", "Mozilla/5.0");
 
         let data: LyricData = self.base.fetch_with_retry(request).await?;
@@ -176,6 +183,14 @@ impl LyricsFetcher for KugouFetcher {
 
         let decoded = self.decode_lyric(&data.content)?;
         Ok(decoded)
+    }
+
+    async fn fetch_lyric(&self, song: &SongInfo) -> Result<String, LyricsError> {
+        log::debug!("kugou start ");
+        let list = self.search_lyric(song).await?;
+        let item = get_first(list, song)?;
+        log::debug!("Get song: {:?} info: {:?}", item, song);
+        self.download_lyric(&item).await
     }
 
     fn source_name(&self) -> &'static str {

@@ -1,7 +1,8 @@
 # lyric-next
 
-终端歌词显示，使用 mpris 获取播放信息，自动下载歌词。
+文件路径为 `~/.lyrics/`
 
+终端歌词显示，使用 mpris 获取播放信息，自动下载歌词。
 
 **KeyMap**
 
@@ -9,13 +10,13 @@ key            | action
 --------------:|------
 `h` / `?`      | 帮助
 `q` / `ESC`    | 退出
-`d` / `delete` |  删除歌词
-`left`         |  后退
-`right`        |  前进
-`space`        |  暂停/播放
-`n`            |  下一曲
-`p`            |  上一曲
-`s`            | 搜索
+`d` / `delete` | 删除歌词
+`left`         | 后退
+`right`        | 前进
+`space`        | 暂停/播放
+`n`            | 下一曲
+`p`            | 上一曲
+`s`            | 搜索,手动更新
 
 **Search key**
 
@@ -27,7 +28,19 @@ key            | action
 `p` / `Up`     |上一个
 `l` / `Enter`  |上一个
 
-**TODO**
 
-- ui 搜索列表
-  - 手动选择更新
+## 配置
+
+配置文件 `~/.lyrics/lyrics.toml`
+
+```toml
+[ui]
+title = true
+time = false
+progress_bar = true
+
+[sources]
+netease = true
+qq = true
+kugou = true
+```

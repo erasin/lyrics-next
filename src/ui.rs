@@ -51,18 +51,7 @@ impl App {
         while !self.exit {
             tokio::select! {
                 _ = interval.tick() => {
-
-                    match self.screen {
-                        Screen::Lyrics => { self.lyrics.update().await; },
-                        Screen::Search => {
-                            if self.search.lyrics_reset() {
-                                self.lyrics.reset()
-                            }
-                            self.search.update().await;
-                        },
-                        _ => {}
-                    }
-
+                    self.update().await;
                     terminal.draw(|frame| self.draw(frame))?;
                 },
                 Some(Ok(event)) = events.next() => self.handle_event(&event).await,
@@ -71,14 +60,29 @@ impl App {
         Ok(())
     }
 
+    // 状态刷新
+    async fn update(&mut self) {
+        match self.screen {
+            Screen::Lyrics => {
+                self.lyrics.update().await;
+            }
+            Screen::Search => {
+                if self.search.lyrics_reset() {
+                    self.lyrics.reset();
+                    self.screen = Screen::Lyrics;
+                }
+                self.search.update().await;
+            }
+            _ => {}
+        }
+    }
+
     fn draw(&mut self, frame: &mut Frame) {
         let area = frame.area();
         let buf = frame.buffer_mut();
         match self.screen {
             Screen::Lyrics => self.lyrics.render(area, buf),
-            Screen::Search => {
-                self.search.render(area, buf);
-            }
+            Screen::Search => self.search.render(area, buf),
             Screen::Help => self.help.render(area, buf),
         }
     }

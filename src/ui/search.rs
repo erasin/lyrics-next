@@ -1,5 +1,3 @@
-use std::ops::DerefMut;
-
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
@@ -11,11 +9,10 @@ use ratatui::{
     symbols,
     text::{Line, Span},
     widgets::{
-        Block, Borders, HighlightSpacing, List, ListItem, ListState, Padding, Paragraph,
-        StatefulWidget, Widget,
+        Block, Borders, HighlightSpacing, List, ListItem, ListState, Paragraph, StatefulWidget,
+        Widget,
     },
 };
-use tokio::runtime::Runtime;
 
 use crate::{
     client::{LyricsItem, get_lyrics_client},
@@ -97,10 +94,13 @@ impl SearchScreen {
                 let color = alternate_colors(i);
                 Line::from(vec![
                     Span::raw(&item.source).fg(BLUE.c400),
+                    Span::raw(" "),
                     Span::raw(&item.title)
                         .fg(YELLOW.c400)
                         .add_modifier(Modifier::BOLD),
+                    Span::raw(" "),
                     Span::raw(&item.artist).fg(GREEN.c400),
+                    Span::raw(" "),
                     Span::raw(&item.album).add_modifier(Modifier::ITALIC),
                 ])
                 .bg(color)
@@ -139,11 +139,11 @@ impl SearchScreen {
     }
 
     pub fn lyrics_reset(&mut self) -> bool {
-        if self.state.down {
-            self.state.down = false;
+        if self.state.reset_lyrics_cache {
+            self.state.reset_lyrics_cache = false;
             return true;
         }
-        return false;
+        false
     }
 }
 
@@ -153,7 +153,8 @@ pub struct SearchState {
     list: Vec<LyricsItem>,
     /// 新增错误状态
     error_message: Option<String>,
-    pub down: bool,
+    // 有则重置
+    pub reset_lyrics_cache: bool,
 }
 
 impl SearchState {
@@ -195,14 +196,14 @@ impl SearchState {
         let item = match self.list.get(item_index) {
             Some(i) => i,
             None => {
-                self.down = false;
+                self.reset_lyrics_cache = false;
                 self.error_message = Some("选择错误，超出范围！".to_string());
                 return;
             }
         };
 
         match get_lyrics_client().download(&self.song, item).await {
-            Ok(_) => self.down = true,
+            Ok(_) => self.reset_lyrics_cache = true,
             Err(e) => {
                 self.error_message = Some(e.to_string());
             }

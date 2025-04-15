@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use serde::Deserialize;
 
 use super::{BaseFetcher, LyricsFetcher, LyricsItem};
-use crate::{error::LyricsError, song::SongInfo};
+use crate::{client::get_first, error::LyricsError, song::SongInfo};
 
 #[derive(Debug, Deserialize)]
 struct Response {
@@ -54,59 +54,7 @@ pub(super) struct NeteaseFetcher {
     base: BaseFetcher,
 }
 
-impl NeteaseFetcher {
-    fn get_first(&self, list: Vec<LyricsItem>, song: &SongInfo) -> Result<LyricsItem, LyricsError> {
-        let list: Vec<LyricsItem> = list
-            .into_iter()
-            .filter(|s| s.title == song.title || s.title.contains(&song.title))
-            .collect();
-
-        if list.is_empty() {
-            return Err(LyricsError::NoLyricsFound);
-        }
-
-        let list: Vec<LyricsItem> = if !song.artist.is_empty() {
-            list.into_iter()
-                .filter(|s| {
-                    if song.artist.is_empty() {
-                        true
-                    } else {
-                        s.artist == song.artist || s.artist.contains(&song.artist)
-                    }
-                })
-                .collect()
-        } else {
-            list
-        };
-
-        if list.is_empty() {
-            return Err(LyricsError::NoLyricsFound);
-        }
-
-        let list: Vec<LyricsItem> = if !song.album.is_empty() {
-            list.into_iter()
-                .filter(|s| {
-                    if song.album.is_empty() {
-                        true
-                    } else {
-                        let a = s.album.to_lowercase();
-                        let b = song.album.to_lowercase();
-                        a == b || a.contains(&b)
-                    }
-                })
-                .collect()
-        } else {
-            list
-        };
-
-        if list.is_empty() {
-            return Err(LyricsError::NoLyricsFound);
-        }
-
-        let first = list.first().ok_or(LyricsError::NoLyricsFound)?;
-        Ok(first.clone())
-    }
-}
+impl NeteaseFetcher {}
 
 #[async_trait]
 impl LyricsFetcher for NeteaseFetcher {
@@ -129,10 +77,16 @@ impl LyricsFetcher for NeteaseFetcher {
             .map(|s| {
                 let source = self.source_name().into();
                 let title = s.name;
-                let artist = s.artists.iter().fold(String::new(), |mut full, a| {
-                    full.push_str(&a.name);
-                    full
-                });
+                let artist = s
+                    .artists
+                    .iter()
+                    .map(|aa| aa.name.clone())
+                    .collect::<Vec<String>>()
+                    .join(" ");
+                // .fold(String::new(), |mut full, a| {
+                //     full.push_str(&a.name);
+                //     full
+                // });
                 let album = s.album.name;
                 let params = vec![
                     ("id".to_string(), s.id.to_string()),
@@ -169,7 +123,7 @@ impl LyricsFetcher for NeteaseFetcher {
     async fn fetch_lyric(&self, song: &SongInfo) -> Result<String, LyricsError> {
         log::debug!("Netease song: {:?}", song);
         let list = self.search_lyric(song).await?;
-        let item = self.get_first(list, song)?;
+        let item = get_first(list, song)?;
         log::debug!("Get song: {:?} info: {:?}", item, song);
         self.download_lyric(&item).await
     }
