@@ -1,17 +1,24 @@
+use std::ops::DerefMut;
+
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
-    style::Stylize,
+    style::{
+        Stylize,
+        palette::tailwind::{BLUE, GREEN},
+    },
     symbols,
-    text::Line,
+    text::{Line, Span},
     widgets::{
-        Block, Borders, HighlightSpacing, List, ListItem, ListState, Paragraph, StatefulWidget,
-        Widget,
+        Block, Borders, HighlightSpacing, List, ListItem, ListState, Padding, Paragraph,
+        StatefulWidget, Widget,
     },
 };
+use tokio::runtime::Runtime;
 
 use crate::{
+    client::{LyricsItem, get_lyrics_client},
     error::LyricsError,
     song::{SongInfo, get_current_song},
 };
@@ -28,7 +35,11 @@ pub(super) struct SearchScreen {
 impl SearchScreen {
     // 主渲染函数
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let _ = self.state.update();
+        // 渲染错误信息
+        if let Some(err_msg) = &self.state.error_message {
+            render_error(area, buf, err_msg);
+            return;
+        }
 
         // 整体垂直布局
         let [header_chunk, list_chunk, footer_chunk] = Layout::new(
@@ -46,9 +57,9 @@ impl SearchScreen {
         self.render_footer(footer_chunk, buf);
     }
 
-    pub fn handle_key_event(&mut self, key_event: &KeyEvent) {
+    pub async fn handle_key_event(&mut self, key_event: &KeyEvent) {
         match key_event.code {
-            KeyCode::Char('l') | KeyCode::Enter => self.download(),
+            KeyCode::Char('l') | KeyCode::Enter => self.download().await,
             KeyCode::Up | KeyCode::Char('p') | KeyCode::Char('k') => self.selected_up(),
             KeyCode::Down | KeyCode::Char('n') | KeyCode::Char('j') => self.selected_down(),
             _ => {}
@@ -73,7 +84,7 @@ impl SearchScreen {
             .title(Line::raw("搜索").centered())
             .borders(Borders::TOP)
             .border_set(symbols::border::EMPTY)
-            .border_style(TODO_HEADER_STYLE)
+            .border_style(LIST_HEADER_STYLE)
             .bg(NORMAL_ROW_BG);
 
         // Iterate through all elements in the `items` and stylize them.
@@ -82,9 +93,18 @@ impl SearchScreen {
             .list
             .iter()
             .enumerate()
-            .map(|(i, todo_item)| {
+            .map(|(i, item)| {
                 let color = alternate_colors(i);
-                Line::raw(todo_item).bg(color).into()
+                Line::from(vec![
+                    Span::raw(&item.source).fg(BLUE.c400),
+                    Span::raw(&item.title)
+                        .fg(YELLOW.c400)
+                        .add_modifier(Modifier::BOLD),
+                    Span::raw(&item.artist).fg(GREEN.c400),
+                    Span::raw(&item.album).add_modifier(Modifier::ITALIC),
+                ])
+                .bg(color)
+                .into()
             })
             .collect();
 
@@ -106,15 +126,34 @@ impl SearchScreen {
         self.list_state.select_next();
     }
 
-    fn download(&self) {}
+    pub async fn update(&mut self) {
+        self.state.update().await;
+    }
+
+    async fn download(&mut self) {
+        let item_index = self.list_state.selected().unwrap();
+        if item_index > self.state.list.len() {
+            return;
+        }
+        self.state.download(item_index).await;
+    }
+
+    pub fn lyrics_reset(&mut self) -> bool {
+        if self.state.down {
+            self.state.down = false;
+            return true;
+        }
+        return false;
+    }
 }
 
 #[derive(Clone, Default)]
 pub struct SearchState {
     song: SongInfo,
-    // current_page: usize,
-    // total_pages: usize,
-    list: Vec<String>,
+    list: Vec<LyricsItem>,
+    /// 新增错误状态
+    error_message: Option<String>,
+    pub down: bool,
 }
 
 impl SearchState {
@@ -122,7 +161,16 @@ impl SearchState {
         *self = Self::default();
     }
 
-    fn update(&mut self) -> Result<(), LyricsError> {
+    pub async fn update(&mut self) {
+        match self.try_update().await {
+            Ok(_) => {
+                self.error_message = None; // 清除旧错误        
+            }
+            Err(e) => self.error_message = Some(e.to_string()),
+        }
+    }
+
+    pub async fn try_update(&mut self) -> Result<(), LyricsError> {
         // 获取当前播放器和歌曲信息
         let song = match get_current_song() {
             Ok(s) => s,
@@ -137,15 +185,27 @@ impl SearchState {
         if song != self.song {
             self.reset();
             self.song = song.clone();
-            self.list = vec![
-                "test1".to_string(),
-                "test2".to_string(),
-                "test3".to_string(),
-                "test4".to_string(),
-                "test5".to_string(),
-            ];
+            self.list = get_lyrics_client().get_search(&song).await?;
         }
 
         Ok(())
+    }
+
+    pub async fn download(&mut self, item_index: usize) {
+        let item = match self.list.get(item_index) {
+            Some(i) => i,
+            None => {
+                self.down = false;
+                self.error_message = Some("选择错误，超出范围！".to_string());
+                return;
+            }
+        };
+
+        match get_lyrics_client().download(&self.song, item).await {
+            Ok(_) => self.down = true,
+            Err(e) => {
+                self.error_message = Some(e.to_string());
+            }
+        }
     }
 }

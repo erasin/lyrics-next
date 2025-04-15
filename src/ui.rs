@@ -51,10 +51,21 @@ impl App {
         while !self.exit {
             tokio::select! {
                 _ = interval.tick() => {
-                    self.lyrics.update().await;
+
+                    match self.screen {
+                        Screen::Lyrics => { self.lyrics.update().await; },
+                        Screen::Search => {
+                            if self.search.lyrics_reset() {
+                                self.lyrics.reset()
+                            }
+                            self.search.update().await;
+                        },
+                        _ => {}
+                    }
+
                     terminal.draw(|frame| self.draw(frame))?;
                 },
-                Some(Ok(event)) = events.next() => self.handle_event(&event),
+                Some(Ok(event)) = events.next() => self.handle_event(&event).await,
             }
         }
         Ok(())
@@ -65,12 +76,14 @@ impl App {
         let buf = frame.buffer_mut();
         match self.screen {
             Screen::Lyrics => self.lyrics.render(area, buf),
-            Screen::Search => self.search.render(area, buf),
+            Screen::Search => {
+                self.search.render(area, buf);
+            }
             Screen::Help => self.help.render(area, buf),
         }
     }
 
-    fn handle_event(&mut self, event: &Event) {
+    async fn handle_event(&mut self, event: &Event) {
         if let Event::Key(key) = event {
             if key.kind == KeyEventKind::Press {
                 match self.screen {
@@ -78,12 +91,12 @@ impl App {
                         KeyCode::Char('h') | KeyCode::Char('?') => self.screen = Screen::Help,
                         KeyCode::Char('s') => self.screen = Screen::Search,
                         KeyCode::Char('q') | KeyCode::Esc => self.exit(),
-                        _ => self.lyrics.handle_key_event(key),
+                        _ => self.lyrics.handle_key_event(key).await,
                     },
                     Screen::Search => match key.code {
                         KeyCode::Char('q') | KeyCode::Esc => self.screen = Screen::Lyrics,
                         KeyCode::Char('h') | KeyCode::Char('?') => self.screen = Screen::Help,
-                        _ => self.search.handle_key_event(key),
+                        _ => self.search.handle_key_event(key).await,
                     },
                     Screen::Help => match key.code {
                         KeyCode::Char('q') | KeyCode::Esc => self.screen = Screen::Lyrics,
@@ -112,7 +125,7 @@ const HELP_KEY_STYLE: Style = Style::new()
     .fg(LIGHT_BLUE.c400)
     .add_modifier(Modifier::BOLD);
 
-const TODO_HEADER_STYLE: Style = Style::new().fg(GRAY.c100).bg(BLUE.c800);
+const LIST_HEADER_STYLE: Style = Style::new().fg(GRAY.c100).bg(BLUE.c800);
 const NORMAL_ROW_BG: Color = GRAY.c900;
 const ALT_ROW_BG_COLOR: Color = GRAY.c900;
 const SELECTED_STYLE: Style = Style::new().bg(GRAY.c800).add_modifier(Modifier::BOLD);

@@ -22,7 +22,7 @@ use super::{LINE_STYLE, LINE_TARGET_STYLE, LYRICS_GAUGE_STYLE, LYRICS_HEADER_STY
 
 #[derive(Clone, Default)]
 pub(super) struct LyricsScreen {
-    pub(super) state: LyricState,
+    state: LyricState,
 }
 
 impl LyricsScreen {
@@ -164,7 +164,7 @@ impl LyricsScreen {
             .render(area, buf);
     }
 
-    pub fn handle_key_event(&mut self, key_event: &KeyEvent) {
+    pub async fn handle_key_event(&mut self, key_event: &KeyEvent) {
         match key_event.code {
             KeyCode::Char('d') | KeyCode::Delete => self.delete(),
             KeyCode::Left => self.state.action(PlayerAction::Left),
@@ -189,6 +189,10 @@ impl LyricsScreen {
     /// 删除
     fn delete(&mut self) {
         self.state.delete();
+    }
+
+    pub fn reset(&mut self) {
+        self.state.reset();
     }
 }
 
@@ -239,7 +243,7 @@ impl LyricState {
         };
     }
 
-    fn reset(&mut self) {
+    pub fn reset(&mut self) {
         *self = LyricState::default();
     }
 
@@ -272,7 +276,7 @@ impl LyricState {
         if song != self.song {
             self.reset();
             self.song = song.clone();
-            let doc = get_lyrics_client().get_lyric(&song).await?;
+            let doc = get_lyrics_client().get_lyrics(&song).await?;
             self.lyrics = LyricParser::parse(&doc, song.duration)?;
         }
 
@@ -315,9 +319,10 @@ impl LyricState {
         }
     }
 
-    pub fn delete(&self) {
+    pub fn delete(&mut self) {
         if !self.song.title.is_empty() {
             get_lyrics_client().cache.delete(&self.song);
+            self.reset();
         }
     }
 

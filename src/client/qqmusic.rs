@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use base64::{Engine, prelude::BASE64_STANDARD};
 use serde::Deserialize;
 
-use super::{BaseFetcher, LyricsFetcher};
+use super::{BaseFetcher, LyricsFetcher, LyricsItem};
 use crate::{error::LyricsError, song::SongInfo};
 
 #[derive(Debug, Deserialize)]
@@ -47,6 +47,12 @@ pub(super) struct QQMusicFetcher {
 
 #[async_trait]
 impl LyricsFetcher for QQMusicFetcher {
+    async fn search_lyric(&self, song: &SongInfo) -> Result<Vec<LyricsItem>, LyricsError> {
+        Err(LyricsError::NoLyricsFound)
+    }
+    async fn download_lyric(&self, item: &LyricsItem) -> Result<String, LyricsError> {
+        Err(LyricsError::NoLyricsFound)
+    }
     async fn fetch_lyric(&self, song: &SongInfo) -> Result<String, LyricsError> {
         log::debug!("QQ search");
 

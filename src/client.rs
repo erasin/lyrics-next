@@ -6,7 +6,7 @@ use netease::NeteaseFetcher;
 use qqmusic::QQMusicFetcher;
 use reqwest::RequestBuilder;
 use ropey::Rope;
-use serde::de::DeserializeOwned;
+use serde::{Serialize, de::DeserializeOwned};
 
 use crate::{
     cache::CacheManager, config::get_config, error::LyricsError, song::SongInfo,
@@ -21,15 +21,20 @@ mod qqmusic;
 /// 歌词抓取器
 #[async_trait]
 trait LyricsFetcher: Send + Sync {
-    // async fn search_lyric(&self, song: &SongInfo) -> Result<ListLrc, LyricsError>;
+    async fn search_lyric(&self, song: &SongInfo) -> Result<Vec<LyricsItem>, LyricsError>;
+    async fn download_lyric(&self, item: &LyricsItem) -> Result<String, LyricsError>;
     async fn fetch_lyric(&self, song: &SongInfo) -> Result<String, LyricsError>;
     fn source_name(&self) -> &'static str;
 }
 
-// struct ListLrc {
-//     sources: String,
-//     title: String,
-// }
+#[derive(Debug, Clone)]
+pub struct LyricsItem {
+    pub source: String,
+    pub title: String,
+    pub artist: String,
+    pub album: String,
+    pub params: Vec<(String, String)>,
+}
 
 // 公共基础结构
 struct BaseFetcher {
@@ -59,6 +64,7 @@ impl BaseFetcher {
         let mut attempt = 0;
         loop {
             let response = request.try_clone().unwrap().send().await;
+            log::debug!("REQUEST: {:?} \n RESPONSE: {:?}", request, response);
             match response {
                 Ok(res) => return Ok(res.json::<T>().await?),
                 Err(_e) if attempt < self.retries => {
@@ -91,12 +97,12 @@ impl LyricsClient {
         if config.netease {
             fetchers.push(Box::new(NeteaseFetcher::default()));
         }
-        if config.qq {
-            fetchers.push(Box::new(QQMusicFetcher::default()));
-        }
-        if config.kugou {
-            fetchers.push(Box::new(KugouFetcher::default()));
-        }
+        // if config.qq {
+        //     fetchers.push(Box::new(QQMusicFetcher::default()));
+        // }
+        // if config.kugou {
+        //     fetchers.push(Box::new(KugouFetcher::default()));
+        // }
 
         Self {
             fetchers,
@@ -104,7 +110,18 @@ impl LyricsClient {
         }
     }
 
-    pub async fn get_lyric(&self, song: &SongInfo) -> Result<Rope, LyricsError> {
+    pub async fn get_search(&self, song: &SongInfo) -> Result<Vec<LyricsItem>, LyricsError> {
+        let mut list = Vec::new();
+
+        for fetcher in &self.fetchers {
+            let mut sl = fetcher.search_lyric(song).await?;
+            list.append(&mut sl);
+        }
+
+        Ok(list)
+    }
+
+    pub async fn get_lyrics(&self, song: &SongInfo) -> Result<Rope, LyricsError> {
         if let Some(cached) = self.cache.get(song).await {
             log::debug!("Cache lyric for: {} - {}", song.artist, song.title);
             return Ok(cached);
@@ -125,6 +142,25 @@ impl LyricsClient {
                 Err(e) => log::warn!("{} failed: {}", fetcher.source_name(), e),
             }
         }
+        Err(LyricsError::NoLyricsFound)
+    }
+
+    pub async fn download(&self, song: &SongInfo, item: &LyricsItem) -> Result<(), LyricsError> {
+        for fetcher in &self.fetchers {
+            if fetcher.source_name() == item.source {
+                match fetcher.download_lyric(item).await {
+                    Ok(lyric) => {
+                        log::info!("Successfully fetched from {}", fetcher.source_name());
+                        self.cache
+                            .store(song, fetcher.source_name(), &lyric)
+                            .await?;
+                        return Ok(());
+                    }
+                    Err(e) => log::warn!("{} failed: {}", fetcher.source_name(), e),
+                }
+            }
+        }
+
         Err(LyricsError::NoLyricsFound)
     }
 

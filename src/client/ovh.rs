@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use serde_json::Value;
 
-use super::{BaseFetcher, LyricsFetcher};
+use super::{BaseFetcher, LyricsFetcher, LyricsItem};
 use crate::{error::LyricsError, song::SongInfo};
 
 // Spotify音乐实现
@@ -13,6 +13,12 @@ pub(super) struct OvhFetcher {
 
 #[async_trait]
 impl LyricsFetcher for OvhFetcher {
+    async fn search_lyric(&self, song: &SongInfo) -> Result<Vec<LyricsItem>, LyricsError> {
+        Err(LyricsError::NoLyricsFound)
+    }
+    async fn download_lyric(&self, item: &LyricsItem) -> Result<String, LyricsError> {
+        Err(LyricsError::NoLyricsFound)
+    }
     async fn fetch_lyric(&self, song: &SongInfo) -> Result<String, LyricsError> {
         // 假设使用的第三方Spotify歌词API如下（实际应使用真实的API）
         let ovh_api = "https://api.lyrics.ovh/v1";

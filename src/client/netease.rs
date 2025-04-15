@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use serde::Deserialize;
 
-use super::{BaseFetcher, LyricsFetcher};
+use super::{BaseFetcher, LyricsFetcher, LyricsItem};
 use crate::{error::LyricsError, song::SongInfo};
 
 #[derive(Debug, Deserialize)]
@@ -54,10 +54,63 @@ pub(super) struct NeteaseFetcher {
     base: BaseFetcher,
 }
 
+impl NeteaseFetcher {
+    fn get_first(&self, list: Vec<LyricsItem>, song: &SongInfo) -> Result<LyricsItem, LyricsError> {
+        let list: Vec<LyricsItem> = list
+            .into_iter()
+            .filter(|s| s.title == song.title || s.title.contains(&song.title))
+            .collect();
+
+        if list.is_empty() {
+            return Err(LyricsError::NoLyricsFound);
+        }
+
+        let list: Vec<LyricsItem> = if !song.artist.is_empty() {
+            list.into_iter()
+                .filter(|s| {
+                    if song.artist.is_empty() {
+                        true
+                    } else {
+                        s.artist == song.artist || s.artist.contains(&song.artist)
+                    }
+                })
+                .collect()
+        } else {
+            list
+        };
+
+        if list.is_empty() {
+            return Err(LyricsError::NoLyricsFound);
+        }
+
+        let list: Vec<LyricsItem> = if !song.album.is_empty() {
+            list.into_iter()
+                .filter(|s| {
+                    if song.album.is_empty() {
+                        true
+                    } else {
+                        let a = s.album.to_lowercase();
+                        let b = song.album.to_lowercase();
+                        a == b || a.contains(&b)
+                    }
+                })
+                .collect()
+        } else {
+            list
+        };
+
+        if list.is_empty() {
+            return Err(LyricsError::NoLyricsFound);
+        }
+
+        let first = list.first().ok_or(LyricsError::NoLyricsFound)?;
+        Ok(first.clone())
+    }
+}
+
 #[async_trait]
 impl LyricsFetcher for NeteaseFetcher {
-    async fn fetch_lyric(&self, song: &SongInfo) -> Result<String, LyricsError> {
-        log::debug!("Netease song: {:?}", song);
+    async fn search_lyric(&self, song: &SongInfo) -> Result<Vec<LyricsItem>, LyricsError> {
         let search_url = "https://music.163.com/api/search/get/";
 
         let request = self.base.client.get(search_url).query(&[
@@ -69,47 +122,56 @@ impl LyricsFetcher for NeteaseFetcher {
 
         let data = self.base.fetch_with_retry::<Response>(request).await?;
 
-        log::debug!("Get song: {:?}, info: {:?}", data, song);
-
-        let song_id = data
+        let list: Vec<LyricsItem> = data
             .result
             .songs
             .into_iter()
-            .filter(|s| s.name == song.title || s.name.contains(&song.title))
-            .filter(|s| {
-                if song.artist.is_empty() {
-                    true
-                } else {
-                    s.artists.iter().find(|&a| a.name == song.artist).is_some()
+            .map(|s| {
+                let source = self.source_name().into();
+                let title = s.name;
+                let artist = s.artists.iter().fold(String::new(), |mut full, a| {
+                    full.push_str(&a.name);
+                    full
+                });
+                let album = s.album.name;
+                let params = vec![
+                    ("id".to_string(), s.id.to_string()),
+                    ("lv".to_string(), "1".to_string()),
+                ];
+
+                LyricsItem {
+                    source,
+                    title,
+                    artist,
+                    album,
+                    params,
                 }
             })
-            .filter(|s| {
-                if song.album.is_empty() {
-                    true
-                } else {
-                    let a = s.album.name.to_lowercase();
-                    let b = song.album.to_lowercase();
-                    a == b || a.contains(&b)
-                }
-            })
-            .next()
-            .map(|s| s.id)
-            .ok_or(LyricsError::NoLyricsFound)?;
+            .collect();
 
-        log::debug!("Get song id: {:?}", song_id);
+        log::debug!("Get List: {:?}", list);
 
-        let lyric_url = format!("https://music.163.com/api/song/lyric?id={}&lv=1", song_id);
-        let request = self
-            .base
-            .client
-            .get(lyric_url)
-            .query(&[("id", song_id), ("lv", 1)]);
+        if !list.is_empty() {
+            Ok(list)
+        } else {
+            Err(LyricsError::NoLyricsFound)
+        }
+    }
 
+    async fn download_lyric(&self, item: &LyricsItem) -> Result<String, LyricsError> {
+        let lyric_url = "https://music.163.com/api/song/lyric";
+        let request = self.base.client.get(lyric_url).query(&item.params);
         let data: LyricData = self.base.fetch_with_retry(request).await?;
-
         log::debug!("Get lyric: {:?}", data);
-
         Ok(data.lrc.lyric)
+    }
+
+    async fn fetch_lyric(&self, song: &SongInfo) -> Result<String, LyricsError> {
+        log::debug!("Netease song: {:?}", song);
+        let list = self.search_lyric(song).await?;
+        let item = self.get_first(list, song)?;
+        log::debug!("Get song: {:?} info: {:?}", item, song);
+        self.download_lyric(&item).await
     }
 
     fn source_name(&self) -> &'static str {
