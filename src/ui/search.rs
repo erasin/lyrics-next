@@ -6,11 +6,9 @@ use ratatui::{
         Stylize,
         palette::tailwind::{BLUE, GREEN},
     },
-    symbols,
     text::{Line, Span},
     widgets::{
-        Block, Borders, HighlightSpacing, List, ListItem, ListState, Paragraph, StatefulWidget,
-        Widget,
+        Block, HighlightSpacing, List, ListItem, ListState, Paragraph, StatefulWidget, Widget,
     },
 };
 
@@ -33,17 +31,19 @@ impl SearchScreen {
     // 主渲染函数
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
         // 渲染错误信息
-        if let Some(err_msg) = &self.state.error_message {
-            render_error(area, buf, err_msg);
-            return;
-        }
+        let err_height = if self.state.error_message.is_some() {
+            Constraint::Length(1)
+        } else {
+            Constraint::Length(0)
+        };
 
         // 整体垂直布局
-        let [header_chunk, list_chunk, footer_chunk] = Layout::new(
+        let [header_chunk, list_chunk, err_chunk, footer_chunk] = Layout::new(
             Direction::Vertical,
             [
                 Constraint::Length(1),
                 Constraint::Min(3),
+                err_height,
                 Constraint::Length(1),
             ],
         )
@@ -51,6 +51,9 @@ impl SearchScreen {
 
         self.render_header(header_chunk, buf);
         self.render_list(list_chunk, buf);
+        if let Some(err_msg) = &self.state.error_message {
+            render_error(err_chunk, buf, err_msg);
+        }
         self.render_footer(footer_chunk, buf);
     }
 
@@ -64,7 +67,7 @@ impl SearchScreen {
     }
 
     fn render_header(&self, area: Rect, buf: &mut Buffer) {
-        Paragraph::new("Lyric 列表")
+        Paragraph::new(self.state.song.title.clone())
             .bold()
             .centered()
             .render(area, buf);
@@ -77,12 +80,7 @@ impl SearchScreen {
     }
 
     fn render_list(&mut self, area: Rect, buf: &mut Buffer) {
-        let block = Block::new()
-            .title(Line::raw("搜索").centered())
-            .borders(Borders::TOP)
-            .border_set(symbols::border::EMPTY)
-            .border_style(LIST_HEADER_STYLE)
-            .bg(NORMAL_ROW_BG);
+        let block = Block::new().bg(NORMAL_ROW_BG);
 
         // Iterate through all elements in the `items` and stylize them.
         let items: Vec<ListItem> = self

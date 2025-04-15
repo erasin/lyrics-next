@@ -129,7 +129,6 @@ const HELP_KEY_STYLE: Style = Style::new()
     .fg(LIGHT_BLUE.c400)
     .add_modifier(Modifier::BOLD);
 
-const LIST_HEADER_STYLE: Style = Style::new().fg(GRAY.c100).bg(BLUE.c800);
 const NORMAL_ROW_BG: Color = GRAY.c900;
 const ALT_ROW_BG_COLOR: Color = GRAY.c900;
 const SELECTED_STYLE: Style = Style::new().bg(GRAY.c800).add_modifier(Modifier::BOLD);

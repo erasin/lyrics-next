@@ -95,8 +95,6 @@ impl LyricsClient {
 
         let config = &get_config().read().unwrap().sources;
 
-        log::debug!("fetcher config: {:?}", config);
-
         if config.netease {
             fetchers.push(Box::new(NeteaseFetcher::default()));
         }
