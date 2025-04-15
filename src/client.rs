@@ -196,7 +196,9 @@ pub fn get_first(list: Vec<LyricsItem>, song: &SongInfo) -> Result<LyricsItem, L
                 if song.artist.is_empty() {
                     true
                 } else {
-                    s.artist == song.artist || s.artist.contains(&song.artist)
+                    let a = s.artist.to_lowercase();
+                    let b = song.artist.to_lowercase();
+                    a == b || a.contains(&b)
                 }
             })
             .collect()
