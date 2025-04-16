@@ -26,6 +26,8 @@ key            | action
 `p`            | 上一曲
 `s`            | 搜索,手动更新
 
+> player 需要支持 mpris track_id 才可以控制歌曲播放。
+
 **Search key**
 
 key            | action 
