@@ -1,6 +1,6 @@
 # lyric-next
 
-在终端下为 mpris 提供歌词
+在终端下为 mpris 提供歌词.
 
 ## 安装
 
