@@ -1,5 +1,9 @@
 # ~/.config/lyrics/lyrics.toml
 # 
+[player-filter]
+except = ["browser", "video", "screen-cast", "chromium", "firefox"]
+only = []
+
 [ui]
 title = true
 time = false

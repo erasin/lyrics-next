@@ -27,8 +27,6 @@ pub(super) struct LyricsScreen {
 
 impl LyricsScreen {
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        // 创建垂直布局
-        //
         let config = &get_config().read().unwrap().ui;
 
         let header_height = match config.title {
@@ -267,11 +265,10 @@ impl LyricState {
         // 获取当前播放器和歌曲信息
         let song = match get_current_song().await {
             Ok(s) => s,
-            Err(LyricsError::NoPlayerFound) => {
+            Err(e) => {
                 self.reset();
-                return Ok(());
+                return Err(e);
             }
-            Err(e) => return Err(e),
         };
 
         // 歌曲发生变化时重新加载歌词

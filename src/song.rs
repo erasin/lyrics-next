@@ -4,7 +4,7 @@ use anyhow::Context;
 use mpris::{Player, PlayerFinder, TrackID};
 use ropey::Rope;
 
-use crate::{error::LyricsError, utils::normalize_text};
+use crate::{config::get_config, error::LyricsError, utils::normalize_text};
 
 /// 歌曲信息
 #[derive(Debug, Clone, PartialEq)]
@@ -48,11 +48,25 @@ impl SongInfo {
     }
 }
 
-/// 优化播放器查找逻辑
+/// 过滤白名单和黑名单
 fn is_valid_player(player: &Player) -> bool {
     let identity = player.identity().to_lowercase();
-    let blacklist_keywords = ["browser", "video", "screen-cast", "chromium", "firefox"];
-    !blacklist_keywords.iter().any(|k| identity.contains(k))
+
+    let config = &get_config().read().unwrap().player_filter;
+
+    if !config.except.is_empty() && config.except.iter().any(|k| identity.contains(k)) {
+        return false;
+    }
+
+    if !config.only.is_empty() {
+        if config.only.iter().any(|k| identity.contains(k)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    true
 }
 
 /// 获取 当前播放的 mpris player
@@ -122,13 +136,18 @@ pub async fn get_current_time_song(st: PlayTime) -> Result<PlayTime, LyricsError
     Ok(st)
 }
 
+/// 播放控制
 #[derive(Clone, PartialEq, Eq, Default)]
 pub enum PlayerAction {
     #[default]
     Toggle,
+    /// 后退
     Left,
+    /// 前进
     Right,
+    /// 下一首
     Next,
+    /// 上一首
     Previous,
 }
 
@@ -160,6 +179,7 @@ pub async fn player_action(action: PlayerAction, song: &SongInfo) -> Result<(), 
     Ok(())
 }
 
+/// 歌词行
 #[derive(Debug, Clone)]
 pub struct LyricsLine {
     pub timestamp_start: f64, // 单位：秒

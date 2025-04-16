@@ -15,42 +15,83 @@ pub fn get_config() -> &'static RwLock<Config> {
     CONFIG.get_or_init(|| RwLock::new(Config::default()))
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 #[serde(rename_all = "kebab-case", default, deny_unknown_fields)]
 pub struct Config {
+    pub player_filter: PlayerFilter,
     pub ui: Ui,
     pub sources: Sources,
 }
 
 #[derive(Debug, Deserialize)]
+pub struct PlayerFilter {
+    #[serde(default = "Vec::new")]
+    pub only: Vec<String>,
+    #[serde(default = "default_player_except")]
+    pub except: Vec<String>,
+}
+
+fn default_player_except() -> Vec<String> {
+    vec![
+        "browser".to_string(),
+        "video".to_string(),
+        "screen-cast".to_string(),
+        "chromium".to_string(),
+        "firefox".to_string(),
+    ]
+}
+
+impl Default for PlayerFilter {
+    fn default() -> Self {
+        PlayerFilter {
+            only: vec![],
+            except: default_player_except(),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Ui {
+    #[serde(default = "default_true")]
     pub title: bool,
+    #[serde(default)]
     pub time: bool,
+    #[serde(default = "default_true")]
     pub progress_bar: bool,
+}
+
+impl Default for Ui {
+    fn default() -> Self {
+        Self {
+            title: true,
+            time: false,
+            progress_bar: true,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Sources {
+    #[serde(default = "default_true")]
     pub netease: bool,
+    #[serde(default = "default_true")]
     pub qq: bool,
+    #[serde(default = "default_true")]
     pub kugou: bool,
 }
 
-impl Default for Config {
-    fn default() -> Config {
-        Config {
-            ui: Ui {
-                title: true,
-                time: false,
-                progress_bar: true,
-            },
-            sources: Sources {
-                netease: true,
-                qq: true,
-                kugou: true,
-            },
+impl Default for Sources {
+    fn default() -> Self {
+        Sources {
+            netease: true,
+            qq: true,
+            kugou: true,
         }
     }
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl Config {
