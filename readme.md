@@ -36,7 +36,7 @@ key            | action
 `h` / `?`      | 帮助.
 `n` / `Down`   |下一个
 `p` / `Up`     |上一个
-`l` / `Enter`  |上一个
+`l` / `Enter`  |下载
 
 ## 配置
 
