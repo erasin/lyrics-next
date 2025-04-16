@@ -2,7 +2,6 @@ use std::time::{Duration, Instant};
 
 use anyhow::Context;
 use mpris::{Player, PlayerFinder, TrackID};
-use ropey::Rope;
 
 use crate::{config::get_config, error::LyricsError, utils::normalize_text};
 
@@ -191,13 +190,13 @@ pub struct LyricsLine {
 pub struct LyricParser;
 
 impl LyricParser {
-    pub async fn parse(doc: &Rope, song_duration: f64) -> Result<Vec<LyricsLine>, LyricsError> {
+    pub async fn parse(doc: String, song_duration: f64) -> Result<Vec<LyricsLine>, LyricsError> {
         let mut entries = Vec::new();
 
         // 第一阶段：收集所有时间标签和文本
         for line in doc.lines() {
-            let line_str = line.to_string();
-            if let Ok((time_tags, text)) = Self::parse_line(&line_str).await {
+            // let line_str = line.to_string();
+            if let Ok((time_tags, text)) = Self::parse_line(&line).await {
                 for ts in time_tags {
                     entries.push((ts, text.clone()));
                 }

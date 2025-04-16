@@ -5,7 +5,6 @@ use kugou::KugouFetcher;
 use netease::NeteaseFetcher;
 use qqmusic::QQMusicFetcher;
 use reqwest::RequestBuilder;
-use ropey::Rope;
 use serde::de::DeserializeOwned;
 
 use crate::{
@@ -122,7 +121,7 @@ impl LyricsClient {
         Ok(list)
     }
 
-    pub async fn get_lyrics(&self, song: &SongInfo) -> Result<Rope, LyricsError> {
+    pub async fn get_lyrics(&self, song: &SongInfo) -> Result<String, LyricsError> {
         if let Some(cached) = self.cache.get(song).await {
             log::debug!("Cache lyric for: {} - {}", song.artist, song.title);
             return Ok(cached);
@@ -137,7 +136,7 @@ impl LyricsClient {
                     self.cache
                         .store(song, fetcher.source_name(), &lyric)
                         .await?;
-                    return Ok(Rope::from(lyric));
+                    return Ok(lyric);
                     // }
                 }
                 Err(e) => log::warn!("{} failed: {}", fetcher.source_name(), e),

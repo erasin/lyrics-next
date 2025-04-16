@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use ropey::Rope;
 use sanitize_filename::sanitize;
 
 use crate::{config::cache_path, error::LyricsError, song::SongInfo};
@@ -29,16 +28,12 @@ impl CacheManager {
         path
     }
 
-    pub async fn get(&self, song: &SongInfo) -> Option<Rope> {
+    pub async fn get(&self, song: &SongInfo) -> Option<String> {
         let path = self.lyrics_name(song);
         if !path.exists() {
             return None;
         }
-
-        tokio::fs::read_to_string(&path)
-            .await
-            .map(|s| Rope::from_str(&s))
-            .ok()
+        tokio::fs::read_to_string(&path).await.ok()
     }
 
     pub async fn store(

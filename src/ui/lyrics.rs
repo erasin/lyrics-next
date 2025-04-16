@@ -276,7 +276,7 @@ impl LyricState {
             self.reset();
             self.song = song.clone();
             let doc = get_lyrics_client().get_lyrics(&song).await?;
-            self.lyrics = LyricParser::parse(&doc, song.duration).await?;
+            self.lyrics = LyricParser::parse(doc, song.duration).await?;
         }
 
         // 获取当前播放进度
