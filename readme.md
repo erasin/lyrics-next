@@ -1,4 +1,4 @@
-# lyric-next
+# lyrics-next
 
 在终端下为 mpris 提供歌词.
 
