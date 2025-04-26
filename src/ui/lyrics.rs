@@ -13,12 +13,12 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect, Size},
-    style::{Style, Stylize},
+    style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, Padding, Paragraph, Widget, Wrap},
 };
 
-use super::{LINE_STYLE, LINE_TARGET_STYLE, LYRICS_GAUGE_STYLE, LYRICS_HEADER_STYLE, render_error};
+use super::{LYRICS_GAUGE_STYLE, LYRICS_HEADER_STYLE, render_error};
 
 #[derive(Clone, Default)]
 pub(super) struct LyricsScreen {
@@ -142,9 +142,14 @@ impl LyricsScreen {
             };
 
             let style = if is_current {
-                LINE_TARGET_STYLE
+                Style::new()
+                    .fg(Color::Indexed(196))
+                    .bg(Color::Reset)
+                    .add_modifier(Modifier::BOLD)
             } else {
-                LINE_STYLE
+                Style::new()
+                    .fg(Color::Indexed(94 + i as u8))
+                    .bg(Color::Reset)
             };
 
             let line = Line::styled(line_text, style);

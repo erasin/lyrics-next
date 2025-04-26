@@ -117,8 +117,6 @@ impl App {
     }
 }
 
-const LINE_STYLE: Style = Style::new().fg(GRAY.c200);
-const LINE_TARGET_STYLE: Style = Style::new().fg(YELLOW.c800).add_modifier(Modifier::BOLD);
 const LYRICS_HEADER_STYLE: Style = Style::new().fg(BLUE.c400);
 const LYRICS_GAUGE_STYLE: Style = Style::new()
     .add_modifier(Modifier::ITALIC)
