@@ -58,11 +58,7 @@ fn is_valid_player(player: &Player) -> bool {
     }
 
     if !config.only.is_empty() {
-        if config.only.iter().any(|k| identity.contains(k)) {
-            return true;
-        } else {
-            return false;
-        }
+        return config.only.iter().any(|k| identity.contains(k));
     }
 
     true
@@ -196,7 +192,7 @@ impl LyricParser {
         // 第一阶段：收集所有时间标签和文本
         for line in doc.lines() {
             // let line_str = line.to_string();
-            if let Ok((time_tags, text)) = Self::parse_line(&line).await {
+            if let Ok((time_tags, text)) = Self::parse_line(line).await {
                 for ts in time_tags {
                     entries.push((ts, text.clone()));
                 }

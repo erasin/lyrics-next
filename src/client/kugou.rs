@@ -95,7 +95,7 @@ impl LyricsFetcher for KugouFetcher {
                     a == b || a.contains(&b)
                 }
             })
-            .filter(|s| {
+            .find(|s| {
                 if song.album.is_empty() {
                     true
                 } else {
@@ -104,8 +104,6 @@ impl LyricsFetcher for KugouFetcher {
                     a == b || a.contains(&b)
                 }
             })
-            .next()
-            .map(|s| s)
             .ok_or(LyricsError::NoLyricsFound)?;
 
         log::debug!("song hash: {} {}", search.album_id, search.hash);
