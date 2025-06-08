@@ -125,6 +125,7 @@ impl LyricsScreen {
         }
 
         // 使用预计算的显示参数
+        // TODO: 当一行的内容超出宽度换行时候计算偏移高度
         let metrics = &state.view_metrics;
         let start = state.target_scroll.min(metrics.scroll_range);
         let end = (start + metrics.visible_lines).min(metrics.content_height);
