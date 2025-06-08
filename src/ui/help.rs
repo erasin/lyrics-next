@@ -5,7 +5,9 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph, Widget, Wrap},
 };
 
-use super::HELP_KEY_STYLE;
+use crate::ui::SearchScreen;
+
+use super::{HELP_KEY_STYLE, LyricsScreen};
 
 #[derive(Clone, Default)]
 pub(super) struct HelpScreen;
@@ -13,38 +15,25 @@ pub(super) struct HelpScreen;
 impl HelpScreen {
     // 帮助
     pub fn render(&self, area: Rect, buf: &mut Buffer) {
+        let lyric_lines = LyricsScreen::help();
+        // search
+        let search_lines = SearchScreen::help();
+        // help
+        let help_lines = vec![("q | ESC ", " 退出到歌词界面.")];
+
         let chunks = Layout::new(
-            Direction::Horizontal,
-            [Constraint::Min(1), Constraint::Min(1), Constraint::Min(1)],
+            Direction::Vertical,
+            [
+                Constraint::Min(lyric_lines.len() as u16 + 2),
+                Constraint::Min(search_lines.len() as u16 + 2),
+                Constraint::Min(help_lines.len() as u16 + 2),
+            ],
         );
         let [lyric_chunk, search_chunk, help_chunk] = chunks.areas(area);
 
-        let lines = vec![
-            ("    h | ? ", " 帮助."),
-            ("  q | ESC ", " 退出."),
-            ("d | Delete ", " 删除当前歌词"),
-            ("      Left ", " 快退"),
-            ("     Right ", "快进"),
-            ("     Space", "暂停播放"),
-            ("     n | j ", "下一曲"),
-            ("     p | k ", "上一曲"),
-            ("     s  ", "搜索"),
-        ];
-        help(lines).render(lyric_chunk, buf);
-
-        // search
-        let lines = vec![("q | ESC ", " 退出到歌词界面.")];
-        help(lines).render(search_chunk, buf);
-
-        // help
-        let lines = vec![
-            ("q | ESC ", " 退出到歌词界面."),
-            ("h | ?   ", " 帮助."),
-            ("n | Down", "下一个"),
-            ("p | Up  ", "上一个"),
-            ("l | Enter ", "下载"),
-        ];
-        help(lines).render(help_chunk, buf);
+        help(lyric_lines).render(lyric_chunk, buf);
+        help(search_lines).render(search_chunk, buf);
+        help(help_lines).render(help_chunk, buf);
     }
 }
 

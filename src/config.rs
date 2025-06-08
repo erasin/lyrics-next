@@ -58,6 +58,8 @@ pub struct Ui {
     pub time: bool,
     #[serde(default = "default_true")]
     pub progress_bar: bool,
+    #[serde(default)]
+    pub text_center: bool,
 }
 
 impl Default for Ui {
@@ -66,6 +68,7 @@ impl Default for Ui {
             title: true,
             time: false,
             progress_bar: true,
+            text_center: false,
         }
     }
 }

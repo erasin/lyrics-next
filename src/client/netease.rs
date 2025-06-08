@@ -60,6 +60,7 @@ impl NeteaseFetcher {}
 impl LyricsFetcher for NeteaseFetcher {
     async fn search_lyric(&self, song: &SongInfo) -> Result<Vec<LyricsItem>, LyricsError> {
         let search_url = "https://music.163.com/api/search/get/";
+        // TODO 分词处理
 
         let request = self.base.client.get(search_url).query(&[
             ("s", format!("{} {}", song.title, song.artist).as_str()),

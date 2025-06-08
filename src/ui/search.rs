@@ -65,6 +65,15 @@ impl SearchScreen {
             _ => {}
         }
     }
+    pub fn help<'a>() -> Vec<(&'a str, &'a str)> {
+        vec![
+            ("q | ESC ", " 退出到歌词界面."),
+            ("h | ?   ", " 帮助."),
+            ("n | Down", "下一个"),
+            ("p | Up  ", "上一个"),
+            ("l | Enter ", "下载"),
+        ]
+    }
 
     fn render_header(&self, area: Rect, buf: &mut Buffer) {
         Paragraph::new(self.state.song.title.clone())

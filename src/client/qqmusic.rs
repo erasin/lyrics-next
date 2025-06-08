@@ -101,6 +101,7 @@ impl LyricsFetcher for QQMusicFetcher {
         log::debug!("Get List: {:?}", list);
 
         if !list.is_empty() {
+            log::debug!("Get List send",);
             Ok(list)
         } else {
             Err(LyricsError::NoLyricsFound)

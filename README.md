@@ -25,6 +25,9 @@ key            | action
 `n`            | 下一曲
 `p`            | 上一曲
 `s`            | 搜索,手动更新
+`t`            | 切换标题显示
+`c`            | 歌词居中
+
 
 > player 需要支持 mpris track_id 才可以控制歌曲播放。
 
@@ -55,6 +58,7 @@ only = []
 title = true
 time = false
 progress_bar = true
+text_center = false
 
 [sources]
 netease = true

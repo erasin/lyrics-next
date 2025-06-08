@@ -94,14 +94,16 @@ impl LyricsClient {
 
         let config = &get_config().read().unwrap().sources;
 
+        if config.kugou {
+            fetchers.push(Box::new(KugouFetcher::default()));
+        }
+
         if config.netease {
             fetchers.push(Box::new(NeteaseFetcher::default()));
         }
+
         if config.qq {
             fetchers.push(Box::new(QQMusicFetcher::default()));
-        }
-        if config.kugou {
-            fetchers.push(Box::new(KugouFetcher::default()));
         }
 
         Self {
@@ -114,7 +116,7 @@ impl LyricsClient {
         let mut list = Vec::new();
 
         for fetcher in &self.fetchers {
-            let mut sl = fetcher.search_lyric(song).await?;
+            let mut sl = fetcher.search_lyric(song).await.unwrap_or_default();
             list.append(&mut sl);
         }
 

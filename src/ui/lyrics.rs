@@ -116,6 +116,7 @@ impl LyricsScreen {
     /// 渲染歌词
     pub fn render_lyric(&self, area: Rect, buf: &mut Buffer) {
         let state = &self.state;
+        let config = &get_config().read().unwrap().ui;
 
         // 渲染错误信息
         if let Some(err_msg) = &state.error_message {
@@ -131,7 +132,7 @@ impl LyricsScreen {
         for (i, line) in state.lyrics[start..end].iter().enumerate() {
             let is_current = start + i == state.find_current_line().unwrap_or(0);
 
-            let line_text = match get_config().read().unwrap().ui.time {
+            let line_text = match config.time {
                 true => format!(
                     "[{:0>2}:{:0>2}] {}",
                     (line.timestamp_start / 60.0).floor() as u64,
@@ -153,7 +154,10 @@ impl LyricsScreen {
             };
 
             let line = Line::styled(line_text, style);
-            lines.push(line);
+            match config.text_center {
+                true => lines.push(line.centered()),
+                false => lines.push(line),
+            }
         }
 
         let block = Block::default()
@@ -177,8 +181,33 @@ impl LyricsScreen {
             KeyCode::Char('p') | KeyCode::Char('k') => {
                 self.state.action(PlayerAction::Previous).await
             }
+            KeyCode::Char('c') => {
+                // center
+                let config = &mut get_config().write().unwrap();
+                config.ui.text_center = !config.ui.text_center;
+            }
+            KeyCode::Char('t') => {
+                let config = &mut get_config().write().unwrap();
+                config.ui.title = !config.ui.title;
+            }
             _ => {}
         }
+    }
+
+    pub fn help<'a>() -> Vec<(&'a str, &'a str)> {
+        vec![
+            ("h | ? ", " 帮助."),
+            ("q | ESC ", " 退出."),
+            ("d | Delete ", " 删除当前歌词"),
+            ("Left ", " 快退"),
+            ("Right ", "快进"),
+            ("Space", "暂停播放"),
+            ("n | j ", "下一曲"),
+            ("p | k ", "上一曲"),
+            ("p | k ", "上一曲"),
+            ("t", "显示|隐藏标题"),
+            ("s", "搜索"),
+        ]
     }
 
     /// 状态刷新
