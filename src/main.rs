@@ -1,5 +1,4 @@
-use std::io::Write;
-use std::{fs::OpenOptions, path::PathBuf};
+use std::path::PathBuf;
 
 use anyhow::Result;
 use chrono::Local;
@@ -7,6 +6,9 @@ use clap::Parser;
 use lyrics_next::client::get_lyrics_client;
 use lyrics_next::config::{Config, log_path};
 use lyrics_next::ui::App;
+use tracing::{Level, info};
+use tracing_appender::rolling::{RollingFileAppender, Rotation};
+use tracing_subscriber::fmt::time::FormatTime;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -16,36 +18,40 @@ struct Args {
     // line
 }
 
-pub fn init_logger() -> Result<()> {
-    // 日志文件路径（用户目录下的 .lyrics/logs/app.log）
-    let log_file = log_path();
+/// 日志时间
+pub struct LocalTimer;
 
+impl FormatTime for LocalTimer {
+    fn format_time(&self, w: &mut tracing_subscriber::fmt::format::Writer<'_>) -> std::fmt::Result {
+        write!(w, "{}", Local::now().format("%Y-%m-%d %H:%M:%S"))
+    }
+}
+
+pub fn init_logger() -> Result<()> {
     #[cfg(debug_assertions)]
-    let level = log::LevelFilter::Trace;
+    let level = Level::DEBUG;
 
     #[cfg(not(debug_assertions))]
-    let level = log::LevelFilter::Info;
+    let level = Level::INFO;
 
-    // 配置日志输出到文件和终端
-    env_logger::Builder::new()
-        .format(|buf, record| {
-            writeln!(
-                buf,
-                "[{} {} {}] {}",
-                Local::now().format("%Y-%m-%d %H:%M:%S"),
-                record.level(),
-                record.module_path().unwrap_or(""),
-                record.args()
-            )
-        })
-        .filter(None, level) // 默认日志级别
-        .target(env_logger::Target::Pipe(Box::new(
-            OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(log_file)?,
-        )))
-        .try_init()?;
+    // 创建按日轮转的日志文件 (存储在./logs目录)
+    let file_appender = RollingFileAppender::new(
+        Rotation::NEVER,
+        log_path(),
+        format!("lyrics-{}.log", Local::now().format("%Y%m%d")),
+    );
+
+    tracing_subscriber::fmt()
+        .with_timer(LocalTimer)
+        .with_max_level(level)
+        .with_target(false)
+        .with_file(false)
+        .with_thread_ids(false)
+        .with_line_number(false)
+        .with_ansi(false)
+        // .with_writer(std::io::stdout)
+        .with_writer(file_appender)
+        .init();
 
     Ok(())
 }
@@ -53,7 +59,7 @@ pub fn init_logger() -> Result<()> {
 #[tokio::main]
 async fn main() -> Result<()> {
     init_logger()?;
-    log::info!("Starting lyric application...");
+    info!("Starting lyric application...");
     let args = Args::parse();
     Config::load_or_default(args.config)?;
     get_lyrics_client();

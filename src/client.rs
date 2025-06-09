@@ -6,6 +6,7 @@ use netease::NeteaseFetcher;
 use qqmusic::QQMusicFetcher;
 use reqwest::RequestBuilder;
 use serde::de::DeserializeOwned;
+use tracing::{debug, info, warn};
 
 use crate::{
     cache::CacheManager, config::get_config, error::LyricsError, song::SongInfo,
@@ -63,7 +64,7 @@ impl BaseFetcher {
         let mut attempt = 0;
         loop {
             let response = request.try_clone().unwrap().send().await;
-            log::debug!("REQUEST: {:?} \n RESPONSE: {:?}", request, response);
+            debug!("REQUEST: {:?} \n RESPONSE: {:?}", request, response);
             match response {
                 Ok(res) => return Ok(res.json::<T>().await?),
                 Err(_e) if attempt < self.retries => {
@@ -125,23 +126,27 @@ impl LyricsClient {
 
     pub async fn get_lyrics(&self, song: &SongInfo) -> Result<String, LyricsError> {
         if let Some(cached) = self.cache.get(song).await {
-            log::debug!("Cache lyric for: {} - {}", song.artist, song.title);
+            info!("Load local lyric file: {} - {}", song.artist, song.title);
             return Ok(cached);
         }
 
         for fetcher in &self.fetchers {
-            log::info!("Trying source: {}", fetcher.source_name());
+            info!("Trying source: {}", fetcher.source_name());
             match fetcher.fetch_lyric(song).await {
                 Ok(lyric) => {
                     //if self.validate_lyric(song, &lyric) {
-                    log::info!("Successfully fetched from {}", fetcher.source_name());
+                    info!(
+                        "Successfully fetched {} from {}",
+                        song.title,
+                        fetcher.source_name()
+                    );
                     self.cache
                         .store(song, fetcher.source_name(), &lyric)
                         .await?;
                     return Ok(lyric);
                     // }
                 }
-                Err(e) => log::warn!("{} failed: {}", fetcher.source_name(), e),
+                Err(e) => warn!("{} failed: {}", fetcher.source_name(), e),
             }
         }
         Err(LyricsError::NoLyricsFound)
@@ -152,13 +157,17 @@ impl LyricsClient {
             if fetcher.source_name() == item.source {
                 match fetcher.download_lyric(item).await {
                     Ok(lyric) => {
-                        log::info!("Successfully fetched from {}", fetcher.source_name());
+                        info!(
+                            "Successfully download {} from {}",
+                            song.title,
+                            fetcher.source_name()
+                        );
                         self.cache
                             .store(song, fetcher.source_name(), &lyric)
                             .await?;
                         return Ok(());
                     }
-                    Err(e) => log::warn!("{} failed: {}", fetcher.source_name(), e),
+                    Err(e) => warn!("{} failed: {}", fetcher.source_name(), e),
                 }
             }
         }

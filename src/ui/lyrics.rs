@@ -17,6 +17,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, Padding, Paragraph, Widget, Wrap},
 };
+use tracing::{debug, info};
 
 use super::{LYRICS_GAUGE_STYLE, LYRICS_HEADER_STYLE, render_error};
 
@@ -343,12 +344,12 @@ impl LyricState {
         if self.retry_counter < 5 {
             self.retry_counter += 1;
             let error_msg = format!("Error: {} (Retry {}/5)", error, self.retry_counter);
-            log::error!("{}", error_msg);
+            info!("{}", error_msg);
             self.error_message = Some(error_msg);
-            log::debug!("Retrying in 2 seconds...");
+            debug!("Retrying in 2 seconds...");
             tokio::time::sleep(Duration::from_secs(2)).await;
         } else {
-            log::error!("Maximum retries reached");
+            info!("Maximum retries reached");
             // self.error_message = Some("Maximum retries reached".into());
         }
     }
@@ -362,7 +363,7 @@ impl LyricState {
 
     pub async fn action(&self, action: PlayerAction) {
         if let Err(e) = player_action(action, &self.song).await {
-            log::error!("Action: {e}");
+            tracing::error!("Action: {e}");
         }
     }
 }

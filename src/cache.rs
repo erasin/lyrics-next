@@ -51,7 +51,7 @@ impl CacheManager {
         let path = self.lyrics_name(song);
         match tokio::fs::remove_file(path).await {
             Ok(_) => {}
-            Err(e) => log::error!("delete file {} failed {}", song.title, e),
+            Err(e) => tracing::error!("delete file {} failed {}", song.title, e),
         }
     }
 }

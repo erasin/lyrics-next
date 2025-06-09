@@ -5,6 +5,7 @@ use std::{
     path::PathBuf,
     sync::{OnceLock, RwLock},
 };
+use tracing::debug;
 
 use crate::{error::LyricsError, utils::ensure_parent_dir};
 
@@ -116,7 +117,7 @@ impl Config {
             Self::default()
         };
 
-        log::debug!("config: {:?}", config);
+        debug!("config: {:?}", config);
 
         let mut c = get_config().write().expect("Get config failed.");
         *c = config;
@@ -139,8 +140,8 @@ pub fn config_path() -> PathBuf {
 pub fn log_path() -> PathBuf {
     let log_file = dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join(CONFIG_PATH)
-        .join("lyrics.log");
+        .join(CONFIG_PATH);
+    // .join("lyrics.log");
     ensure_parent_dir(&log_file);
     log_file
 }

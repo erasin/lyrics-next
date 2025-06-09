@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use serde::Deserialize;
+use tracing::debug;
 
 use super::{BaseFetcher, LyricsFetcher, LyricsItem};
 use crate::{client::get_first, error::LyricsError, song::SongInfo};
@@ -104,7 +105,7 @@ impl LyricsFetcher for NeteaseFetcher {
             })
             .collect();
 
-        log::debug!("Get List: {:?}", list);
+        debug!("Get List: {:?}", list);
 
         if !list.is_empty() {
             Ok(list)
@@ -117,15 +118,15 @@ impl LyricsFetcher for NeteaseFetcher {
         let lyric_url = "https://music.163.com/api/song/lyric";
         let request = self.base.client.get(lyric_url).query(&item.params);
         let data: LyricData = self.base.fetch_with_retry(request).await?;
-        log::debug!("Get lyric: {:?}", data);
+        debug!("Get lyric: {:?}", data);
         Ok(data.lrc.lyric)
     }
 
     async fn fetch_lyric(&self, song: &SongInfo) -> Result<String, LyricsError> {
-        log::debug!("Netease song: {:?}", song);
+        debug!("Netease song: {:?}", song);
         let list = self.search_lyric(song).await?;
         let item = get_first(list, song)?;
-        log::debug!("Get song: {:?} info: {:?}", item, song);
+        debug!("Get song: {:?} info: {:?}", item, song);
         self.download_lyric(&item).await
     }
 

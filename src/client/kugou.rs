@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use base64::{Engine, prelude::BASE64_STANDARD};
 use serde::Deserialize;
+use tracing::debug;
 
 use super::{BaseFetcher, LyricsFetcher, LyricsItem};
 use crate::{client::get_first, error::LyricsError, song::SongInfo};
@@ -77,7 +78,7 @@ impl LyricsFetcher for KugouFetcher {
         ]);
 
         let data: SearchResponse = self.base.fetch_with_retry(request).await?;
-        log::debug!("song json: {:?}", data);
+        debug!("song json: {:?}", data);
 
         let search = data
             .data
@@ -106,7 +107,7 @@ impl LyricsFetcher for KugouFetcher {
             })
             .ok_or(LyricsError::NoLyricsFound)?;
 
-        log::debug!("song hash: {} {}", search.album_id, search.hash);
+        debug!("song hash: {} {}", search.album_id, search.hash);
 
         // 2. 获取歌词
         let lyric_url = "http://krcs.kugou.com/search";
@@ -124,7 +125,7 @@ impl LyricsFetcher for KugouFetcher {
             .header("User-Agent", "Mozilla/5.0");
 
         let data: LyricResponse = self.base.fetch_with_retry(request).await?;
-        log::debug!("lyric list: {:?}", data);
+        debug!("lyric list: {:?}", data);
 
         let list: Vec<LyricsItem> = data
             .candidates
@@ -149,7 +150,7 @@ impl LyricsFetcher for KugouFetcher {
             })
             .collect();
 
-        log::debug!("Get List: {:?}", list);
+        debug!("Get List: {:?}", list);
 
         if !list.is_empty() {
             Ok(list)
@@ -177,17 +178,17 @@ impl LyricsFetcher for KugouFetcher {
             .header("User-Agent", "Mozilla/5.0");
 
         let data: LyricData = self.base.fetch_with_retry(request).await?;
-        log::debug!("lyric: {:?}", data);
+        debug!("lyric: {:?}", data);
 
         let decoded = self.decode_lyric(&data.content)?;
         Ok(decoded)
     }
 
     async fn fetch_lyric(&self, song: &SongInfo) -> Result<String, LyricsError> {
-        log::debug!("kugou start ");
+        debug!("kugou start ");
         let list = self.search_lyric(song).await?;
         let item = get_first(list, song)?;
-        log::debug!("Get song: {:?} info: {:?}", item, song);
+        debug!("Get song: {:?} info: {:?}", item, song);
         self.download_lyric(&item).await
     }
 

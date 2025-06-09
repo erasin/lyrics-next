@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use base64::{Engine, prelude::BASE64_STANDARD};
 use serde::Deserialize;
+use tracing::debug;
 
 use super::{BaseFetcher, LyricsFetcher, LyricsItem};
 use crate::{client::get_first, error::LyricsError, song::SongInfo};
@@ -69,7 +70,7 @@ impl LyricsFetcher for QQMusicFetcher {
             .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.63 Safari/537.36");
 
         let data = self.base.fetch_with_retry::<Response>(request).await?;
-        log::debug!("Get song: {:?}, info: {:?}", data, song);
+        debug!("Get song: {:?}, info: {:?}", data, song);
 
         let list: Vec<LyricsItem> = data
             .data
@@ -98,10 +99,10 @@ impl LyricsFetcher for QQMusicFetcher {
             })
             .collect();
 
-        log::debug!("Get List: {:?}", list);
+        debug!("Get List: {:?}", list);
 
         if !list.is_empty() {
-            log::debug!("Get List send",);
+            debug!("Get List send",);
             Ok(list)
         } else {
             Err(LyricsError::NoLyricsFound)
@@ -140,7 +141,7 @@ impl LyricsFetcher for QQMusicFetcher {
         Ok(re)
     }
     async fn fetch_lyric(&self, song: &SongInfo) -> Result<String, LyricsError> {
-        log::debug!("QQ search");
+        debug!("QQ search");
 
         // let song_mid = data
         //     .data
@@ -168,11 +169,11 @@ impl LyricsFetcher for QQMusicFetcher {
         //     .map(|s| s.songmid)
         //     .ok_or(LyricsError::NoLyricsFound)?;
 
-        // log::debug!("song mid : {song_mid}");
+        // debug!("song mid : {song_mid}");
 
         let list = self.search_lyric(song).await?;
         let item = get_first(list, song)?;
-        log::debug!("Get song: {:?} info: {:?}", item, song);
+        debug!("Get song: {:?} info: {:?}", item, song);
         self.download_lyric(&item).await
     }
 
