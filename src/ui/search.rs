@@ -91,7 +91,7 @@ impl SearchScreen {
     fn render_list(&mut self, area: Rect, buf: &mut Buffer) {
         let block = Block::new().bg(NORMAL_ROW_BG);
 
-        let items: Vec<ListItem> = if self.state.list.len() == 0 {
+        let items: Vec<ListItem> = if self.state.list.is_empty() {
             (1..8)
                 .map(|i| {
                     Line::from(vec![Span::raw(" 搜索中... ")])
