@@ -91,35 +91,46 @@ impl SearchScreen {
     fn render_list(&mut self, area: Rect, buf: &mut Buffer) {
         let block = Block::new().bg(NORMAL_ROW_BG);
 
-        // Iterate through all elements in the `items` and stylize them.
-        let items: Vec<ListItem> = self
-            .state
-            .list
-            .iter()
-            .enumerate()
-            .map(|(i, item)| {
-                let color = alternate_colors(i);
-                Line::from(vec![
-                    Span::raw(&item.source).fg(BLUE.c400),
-                    Span::raw(" "),
-                    Span::raw(&item.title)
-                        .fg(YELLOW.c400)
-                        .add_modifier(Modifier::BOLD),
-                    Span::raw(" "),
-                    Span::raw(&item.artist).fg(GREEN.c400),
-                    Span::raw(" "),
-                    Span::raw(&item.album).add_modifier(Modifier::ITALIC),
-                ])
-                .bg(color)
-                .into()
-            })
-            .collect();
+        let items: Vec<ListItem> = if self.state.list.len() == 0 {
+            (1..8)
+                .map(|i| {
+                    Line::from(vec![Span::raw(" 搜索中... ")])
+                        .centered()
+                        .fg(Color::Indexed(94 + i as u8))
+                        .bg(Color::Reset)
+                        .into()
+                })
+                .collect()
+        } else {
+            self.state
+                .list
+                .iter()
+                .enumerate()
+                .map(|(i, item)| {
+                    let color = alternate_colors(i);
+
+                    Line::from(vec![
+                        Span::raw(&item.source).fg(BLUE.c400),
+                        Span::raw(" "),
+                        Span::raw(&item.title)
+                            .fg(YELLOW.c400)
+                            .add_modifier(Modifier::BOLD),
+                        Span::raw(" "),
+                        Span::raw(&item.artist).fg(GREEN.c400),
+                        Span::raw(" "),
+                        Span::raw(&item.album).add_modifier(Modifier::ITALIC),
+                    ])
+                    .bg(color)
+                    .into()
+                })
+                .collect()
+        };
 
         // Create a List from all list items and highlight the currently selected one
         let list = List::new(items)
             .block(block)
             .highlight_style(SELECTED_STYLE)
-            .highlight_symbol(">")
+            .highlight_symbol(">>>")
             .highlight_spacing(HighlightSpacing::Always);
 
         StatefulWidget::render(list, area, buf, &mut self.list_state);
@@ -145,6 +156,7 @@ impl SearchScreen {
         self.state.download(item_index).await;
     }
 
+    /// 重置
     pub fn lyrics_reset(&mut self) -> bool {
         if self.state.reset_lyrics_cache {
             self.state.reset_lyrics_cache = false;

@@ -10,7 +10,7 @@ use ratatui::{
     layout::{Alignment, Rect},
     style::{
         Color, Modifier, Style,
-        palette::material::{BLUE, GRAY, LIGHT_BLUE, WHITE, YELLOW},
+        palette::material::{BLUE, BROWN, GRAY, LIGHT_BLUE, WHITE, YELLOW},
     },
     widgets::{Block, Borders, Paragraph, Widget},
 };
@@ -51,8 +51,8 @@ impl App {
         while !self.exit {
             tokio::select! {
                 _ = interval.tick() => {
-                    self.update().await;
                     terminal.draw(|frame| self.draw(frame))?;
+                    self.update().await;
                 },
                 Some(Ok(event)) = events.next() => self.handle_event(&event).await,
             }
@@ -128,8 +128,8 @@ const HELP_KEY_STYLE: Style = Style::new()
     .add_modifier(Modifier::BOLD);
 
 const NORMAL_ROW_BG: Color = GRAY.c900;
-const ALT_ROW_BG_COLOR: Color = GRAY.c900;
-const SELECTED_STYLE: Style = Style::new().bg(GRAY.c800).add_modifier(Modifier::BOLD);
+const ALT_ROW_BG_COLOR: Color = GRAY.c800;
+const SELECTED_STYLE: Style = Style::new().bg(BROWN.c900).add_modifier(Modifier::BOLD);
 
 const fn alternate_colors(i: usize) -> Color {
     if i % 2 == 0 {
