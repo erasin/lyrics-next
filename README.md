@@ -1,6 +1,9 @@
 # lyrics-next
 
-在终端下为 mpris 提供歌词.
+在终端下为 mpris 提供歌词展示以及搜索功能.
+
+![Screenshot from 2025-06-11 21-05-21](https://github.com/user-attachments/assets/c17ea748-50b0-4a0c-98cb-716e02733fdb)
+
 
 ## 安装
 
