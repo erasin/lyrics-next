@@ -1,9 +1,12 @@
+use std::borrow::Cow;
+
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph, Widget, Wrap},
 };
+use rust_i18n::t;
 
 use crate::ui::SearchScreen;
 
@@ -19,7 +22,7 @@ impl HelpScreen {
         // search
         let search_lines = SearchScreen::help();
         // help
-        let help_lines = vec![("q | ESC ", " 退出到歌词界面.")];
+        let help_lines = vec![("q | ESC ", t!("help.help.quit"))];
 
         let chunks = Layout::new(
             Direction::Vertical,
@@ -38,7 +41,7 @@ impl HelpScreen {
 }
 
 // 提取的创建行函数
-fn help<'a>(lines: Vec<(&'a str, &'a str)>) -> Paragraph<'a> {
+fn help<'a>(lines: Vec<(&'a str, Cow<'a, str>)>) -> Paragraph<'a> {
     let lines: Vec<Line> = lines
         .into_iter()
         .map(|(key, description)| {

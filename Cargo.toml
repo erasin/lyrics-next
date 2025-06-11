@@ -30,6 +30,7 @@ mpris = "2.0.1" # dbus
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json"] }
 tracing-appender = "0.2"
+rust-i18n = "3.1.5"
 
 [profile.opt]
 inherits = "release"

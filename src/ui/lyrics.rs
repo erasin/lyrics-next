@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{borrow::Cow, time::Duration};
 
 use crate::{
     client::get_lyrics_client,
@@ -17,6 +17,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, Padding, Paragraph, Widget, Wrap},
 };
+use rust_i18n::t;
 use tracing::{debug, info};
 
 use super::{LYRICS_GAUGE_STYLE, LYRICS_HEADER_STYLE, render_error};
@@ -196,19 +197,18 @@ impl LyricsScreen {
         }
     }
 
-    pub fn help<'a>() -> Vec<(&'a str, &'a str)> {
+    pub fn help<'a>() -> Vec<(&'a str, Cow<'a, str>)> {
         vec![
-            ("h | ? ", " 帮助."),
-            ("q | ESC ", " 退出."),
-            ("d | Delete ", " 删除当前歌词"),
-            ("Left ", " 快退"),
-            ("Right ", "快进"),
-            ("Space", "暂停播放"),
-            ("n | j ", "下一曲"),
-            ("p | k ", "上一曲"),
-            ("p | k ", "上一曲"),
-            ("t", "显示|隐藏标题"),
-            ("s", "搜索"),
+            ("h | ? ", t!("help.lyrics.help")),
+            ("q | ESC ", t!("help.lyrics.quit")),
+            ("d | Delete ", t!("help.lyrics.delete")),
+            ("Left ", t!("help.lyrics.back")),
+            ("Right ", t!("help.lyrics.next")),
+            ("Space", t!("help.lyrics.pause")),
+            ("n | j ", t!("help.lyrics.prev_song")),
+            ("p | k ", t!("help.lyrics.next_song")),
+            ("t", t!("help.lyrics.toggle_title")),
+            ("s", t!("help.lyrics.search")),
         ]
     }
 

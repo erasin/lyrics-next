@@ -1,0 +1,24 @@
+[info]
+start = "Starting lyric application..."
+
+[help.lyrics]
+help = "help"
+quit = "quit"
+delete = "delte lyrics"
+back = "back"
+next = "quick"
+pause = "pause"
+prev_song = "prev song"
+next_song = "next song"
+toggle_title = "toggle title show"
+search = "search"
+
+[help.search]
+back = "back to lyrics"
+help = "help"
+next = "next"
+prev = "prev"
+download = "download"
+
+[help.help]
+quit = "back to lyric"

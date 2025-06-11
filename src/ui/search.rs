@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
@@ -11,6 +13,7 @@ use ratatui::{
         Block, HighlightSpacing, List, ListItem, ListState, Paragraph, StatefulWidget, Widget,
     },
 };
+use rust_i18n::t;
 
 use crate::{
     client::{LyricsItem, get_lyrics_client},
@@ -65,13 +68,13 @@ impl SearchScreen {
             _ => {}
         }
     }
-    pub fn help<'a>() -> Vec<(&'a str, &'a str)> {
+    pub fn help<'a>() -> Vec<(&'a str, Cow<'a, str>)> {
         vec![
-            ("q | ESC ", " 退出到歌词界面."),
-            ("h | ?   ", " 帮助."),
-            ("n | Down", "下一个"),
-            ("p | Up  ", "上一个"),
-            ("l | Enter ", "下载"),
+            ("q | ESC ", t!("help.search.back")),
+            ("h | ?   ", t!("help.search.help")),
+            ("n | Down", t!("help.search.next")),
+            ("p | Up  ", t!("help.search.prev")),
+            ("l | Enter ", t!("help.search.download")),
         ]
     }
 

@@ -44,6 +44,7 @@ impl App {
 
     // 保持UI和主循环不变
     pub async fn run(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
+        rust_i18n::set_locale("zh");
         let period = Duration::from_secs_f32(1.0 / Self::FRAMES_PER_SECOND);
         let mut interval = tokio::time::interval(period);
         let mut events = EventStream::new();
@@ -104,6 +105,7 @@ impl App {
                     },
                     Screen::Help => match key.code {
                         KeyCode::Char('q') | KeyCode::Esc => self.screen = Screen::Lyrics,
+                        KeyCode::Char('t') => self.toggle_locale(),
                         _ => {}
                     },
                 }
@@ -114,6 +116,15 @@ impl App {
     /// 关闭
     fn exit(&mut self) {
         self.exit = true;
+    }
+
+    fn toggle_locale(&self) {
+        let locale = rust_i18n::locale();
+        if &*locale == "en" {
+            rust_i18n::set_locale("zh");
+        } else {
+            rust_i18n::set_locale("en");
+        }
     }
 }
 
