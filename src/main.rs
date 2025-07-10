@@ -20,8 +20,9 @@ async fn main() -> Result<()> {
     let args = Args::parse();
     Config::load_or_default(args.config)?;
     get_lyrics_client();
-    let mut terminal = ratatui::init();
-    let app_result = App::default().run(&mut terminal).await;
-    ratatui::restore();
-    app_result
+    let mut app = App::default();
+    app.run().await?;
+    app.restore_term()?;
+
+    Ok(())
 }

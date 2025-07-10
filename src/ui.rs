@@ -5,7 +5,7 @@ use crossterm::event::{Event, EventStream, KeyCode, KeyEventKind};
 use help::HelpScreen;
 use lyrics::LyricsScreen;
 use ratatui::{
-    DefaultTerminal, Frame,
+    Frame,
     buffer::Buffer,
     layout::{Alignment, Rect},
     style::{
@@ -43,7 +43,9 @@ impl App {
     const FRAMES_PER_SECOND: f32 = 12.0;
 
     // 保持UI和主循环不变
-    pub async fn run(&mut self, terminal: &mut DefaultTerminal) -> Result<()> {
+    pub async fn run(&mut self) -> Result<()> {
+        let mut terminal = ratatui::init();
+
         rust_i18n::set_locale("zh");
         let period = Duration::from_secs_f32(1.0 / Self::FRAMES_PER_SECOND);
         let mut interval = tokio::time::interval(period);
@@ -58,6 +60,11 @@ impl App {
                 Some(Ok(event)) = events.next() => self.handle_event(&event).await,
             }
         }
+        Ok(())
+    }
+
+    pub fn restore_term(&self) -> Result<()> {
+        ratatui::restore();
         Ok(())
     }
 
@@ -78,7 +85,7 @@ impl App {
         }
     }
 
-    fn draw(&mut self, frame: &mut Frame) {
+    fn draw<'a>(&mut self, frame: &mut Frame<'a>) {
         let area = frame.area();
         let buf = frame.buffer_mut();
         match self.screen {
