@@ -11,6 +11,9 @@ pub enum LyricsError {
     #[error("MPRIS Find error: {0}")]
     MprisFindError(#[from] mpris::FindingError),
 
+    #[error("MPD error: {0}")]
+    MpdError(#[from] mpd::error::Error),
+
     #[error("HTTP error: {0}")]
     ReqwestError(#[from] reqwest::Error),
 

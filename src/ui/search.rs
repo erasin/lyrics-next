@@ -33,30 +33,28 @@ pub(super) struct SearchScreen {
 impl SearchScreen {
     // 主渲染函数
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        // 渲染错误信息
         let err_height = if self.state.error_message.is_some() {
-            Constraint::Length(1)
+            Constraint::Length(3)
         } else {
             Constraint::Length(0)
         };
 
-        // 整体垂直布局
-        let [header_chunk, list_chunk, err_chunk, footer_chunk] = Layout::new(
+        let [header_chunk, err_chunk, list_chunk, footer_chunk] = Layout::new(
             Direction::Vertical,
             [
                 Constraint::Length(1),
-                Constraint::Min(3),
                 err_height,
+                Constraint::Min(3),
                 Constraint::Length(1),
             ],
         )
         .areas(area);
 
         self.render_header(header_chunk, buf);
-        self.render_list(list_chunk, buf);
         if let Some(err_msg) = &self.state.error_message {
             render_error(err_chunk, buf, err_msg);
         }
+        self.render_list(list_chunk, buf);
         self.render_footer(footer_chunk, buf);
     }
 

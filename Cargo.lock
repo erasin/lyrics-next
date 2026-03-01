@@ -185,6 +185,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bufstream"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40e38929add23cdf8a366df9b0e088953150724bcbe5fc330b0d8eb3b328eec8"
+
+[[package]]
 name = "bumpalo"
 version = "3.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1278,6 +1284,7 @@ dependencies = [
  "clap",
  "crossterm 0.29.0",
  "dirs",
+ "mpd",
  "mpris",
  "ratatui",
  "reqwest",
@@ -1325,6 +1332,15 @@ dependencies = [
  "log",
  "wasi 0.11.0+wasi-snapshot-preview1",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "mpd"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e12cace5746cb0aa78faa6cd2caec9f9c01882fc0e6b54d34685a2d3303ea34"
+dependencies = [
+ "bufstream",
 ]
 
 [[package]]

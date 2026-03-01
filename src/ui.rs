@@ -96,26 +96,26 @@ impl App {
     }
 
     async fn handle_event(&mut self, event: &Event) {
-        if let Event::Key(key) = event {
-            if key.kind == KeyEventKind::Press {
-                match self.screen {
-                    Screen::Lyrics => match key.code {
-                        KeyCode::Char('h') | KeyCode::Char('?') => self.screen = Screen::Help,
-                        KeyCode::Char('s') => self.screen = Screen::Search,
-                        KeyCode::Char('q') | KeyCode::Esc => self.exit(),
-                        _ => self.lyrics.handle_key_event(key).await,
-                    },
-                    Screen::Search => match key.code {
-                        KeyCode::Char('q') | KeyCode::Esc => self.screen = Screen::Lyrics,
-                        KeyCode::Char('h') | KeyCode::Char('?') => self.screen = Screen::Help,
-                        _ => self.search.handle_key_event(key).await,
-                    },
-                    Screen::Help => match key.code {
-                        KeyCode::Char('q') | KeyCode::Esc => self.screen = Screen::Lyrics,
-                        KeyCode::Char('t') => self.toggle_locale(),
-                        _ => {}
-                    },
-                }
+        if let Event::Key(key) = event
+            && key.kind == KeyEventKind::Press
+        {
+            match self.screen {
+                Screen::Lyrics => match key.code {
+                    KeyCode::Char('h') | KeyCode::Char('?') => self.screen = Screen::Help,
+                    KeyCode::Char('s') => self.screen = Screen::Search,
+                    KeyCode::Char('q') | KeyCode::Esc => self.exit(),
+                    _ => self.lyrics.handle_key_event(key).await,
+                },
+                Screen::Search => match key.code {
+                    KeyCode::Char('q') | KeyCode::Esc => self.screen = Screen::Lyrics,
+                    KeyCode::Char('h') | KeyCode::Char('?') => self.screen = Screen::Help,
+                    _ => self.search.handle_key_event(key).await,
+                },
+                Screen::Help => match key.code {
+                    KeyCode::Char('q') | KeyCode::Esc => self.screen = Screen::Lyrics,
+                    KeyCode::Char('t') => self.toggle_locale(),
+                    _ => {}
+                },
             }
         }
     }
@@ -150,7 +150,7 @@ const ALT_ROW_BG_COLOR: Color = GRAY.c800;
 const SELECTED_STYLE: Style = Style::new().bg(BROWN.c900).add_modifier(Modifier::BOLD);
 
 const fn alternate_colors(i: usize) -> Color {
-    if i % 2 == 0 {
+    if i.is_multiple_of(2) {
         NORMAL_ROW_BG
     } else {
         ALT_ROW_BG_COLOR

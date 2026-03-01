@@ -24,12 +24,27 @@ pub struct Config {
     pub sources: Sources,
 }
 
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum PlayerProtocol {
+    #[default]
+    Auto,
+    Mpris,
+    Mpd,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct PlayerFilter {
+    #[serde(default)]
+    pub protocol: PlayerProtocol,
     #[serde(default = "Vec::new")]
     pub only: Vec<String>,
     #[serde(default = "default_player_except")]
     pub except: Vec<String>,
+    #[serde(default = "default_mpd_host")]
+    pub mpd_host: String,
+    #[serde(default = "default_mpd_port")]
+    pub mpd_port: u16,
 }
 
 fn default_player_except() -> Vec<String> {
@@ -42,11 +57,22 @@ fn default_player_except() -> Vec<String> {
     ]
 }
 
+fn default_mpd_host() -> String {
+    "127.0.0.1".to_string()
+}
+
+fn default_mpd_port() -> u16 {
+    6600
+}
+
 impl Default for PlayerFilter {
     fn default() -> Self {
         PlayerFilter {
+            protocol: PlayerProtocol::Mpris,
             only: vec![],
             except: default_player_except(),
+            mpd_host: default_mpd_host(),
+            mpd_port: default_mpd_port(),
         }
     }
 }

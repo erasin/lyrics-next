@@ -27,6 +27,7 @@ tokio = { version = "1.44", features = ["rt-multi-thread", "macros", "fs"] }
 tokio-stream = "0.1.17"
 toml = "0.8.20"
 mpris = "2.0.1" # dbus
+mpd = "0.1" # mpd protocol
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json"] }
 tracing-appender = "0.2"

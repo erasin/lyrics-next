@@ -8,9 +8,9 @@ pub fn normalize_text(s: &str) -> String {
 }
 
 pub fn ensure_parent_dir(path: &Path) {
-    if let Some(parent) = path.parent() {
-        if !parent.exists() {
-            std::fs::create_dir_all(parent).ok();
-        }
+    if let Some(parent) = path.parent()
+        && !parent.exists()
+    {
+        std::fs::create_dir_all(parent).ok();
     }
 }
