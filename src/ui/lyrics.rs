@@ -1,4 +1,4 @@
-use std::{borrow::Cow, time::Duration};
+use std::borrow::Cow;
 
 use crate::{
     client::get_lyrics_client,
@@ -18,7 +18,7 @@ use ratatui::{
     widgets::{Block, Borders, Gauge, Padding, Paragraph, Widget, Wrap},
 };
 use rust_i18n::t;
-use tracing::{debug, info};
+use tracing::{info, warn};
 
 use super::{LYRICS_GAUGE_STYLE, LYRICS_HEADER_STYLE, render_error};
 
@@ -309,10 +309,27 @@ impl LyricState {
 
         // 歌曲发生变化时重新加载歌词
         if song != self.song {
-            self.reset();
+            // 切歌时清除错误状态和重试计数
+            self.error_message = None;
+            self.retry_counter = 0;
+
             self.song = song.clone();
-            let doc = get_lyrics_client().get_lyrics(&song).await?;
-            self.lyrics = LyricParser::parse(doc, song.duration).await?;
+
+            // 尝试获取歌词
+            match get_lyrics_client().get_lyrics(&song).await {
+                Ok(doc) => {
+                    self.lyrics = LyricParser::parse(doc, song.duration).await?;
+                }
+                Err(LyricsError::NoLyricsFound) => {
+                    // 没有找到歌词，尝试自动搜索并下载
+                    info!(
+                        "No lyrics found, attempting auto-download for: {} - {}",
+                        song.artist, song.title
+                    );
+                    self.auto_download_lyrics(&song).await?;
+                }
+                Err(e) => return Err(e),
+            }
         }
 
         // 获取当前播放进度
@@ -325,6 +342,34 @@ impl LyricState {
             self.target_scroll = target_offset.min(self.view_metrics.scroll_range);
         }
 
+        Ok(())
+    }
+
+    async fn auto_download_lyrics(&mut self, song: &SongInfo) -> Result<(), LyricsError> {
+        // 搜索歌词列表
+        let search_results = get_lyrics_client().get_search(song).await?;
+
+        if search_results.is_empty() {
+            warn!("Auto-download failed: No search results found");
+            return Err(LyricsError::NoLyricsFound);
+        }
+
+        // 获取第一个匹配的歌词
+        let best_match = super::super::client::get_first(search_results, song)?;
+
+        info!(
+            "Auto-downloading lyrics from {}: {} - {}",
+            best_match.source, best_match.artist, best_match.title
+        );
+
+        // 下载歌词
+        get_lyrics_client().download(song, &best_match).await?;
+
+        // 重新加载已下载的歌词
+        let doc = get_lyrics_client().get_lyrics(song).await?;
+        self.lyrics = LyricParser::parse(doc, song.duration).await?;
+
+        info!("Auto-download successful");
         Ok(())
     }
 
@@ -346,8 +391,7 @@ impl LyricState {
             let error_msg = format!("Error: {} (Retry {}/5)", error, self.retry_counter);
             info!("{}", error_msg);
             self.error_message = Some(error_msg);
-            debug!("Retrying in 2 seconds...");
-            tokio::time::sleep(Duration::from_secs(2)).await;
+            // 移除等待，让下一次 update 自然重试
         } else {
             info!("Maximum retries reached");
             // self.error_message = Some("Maximum retries reached".into());

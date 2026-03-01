@@ -40,7 +40,7 @@ pub struct App {
 }
 
 impl App {
-    const FRAMES_PER_SECOND: f32 = 12.0;
+    const FRAMES_PER_SECOND: f32 = 30.0;
 
     // 保持UI和主循环不变
     pub async fn run(&mut self) -> Result<()> {
