@@ -11,7 +11,10 @@
 cargo install lyrics-next
 ```
 
-文件路径为 `~/.lyrics/`
+- `~/.config/lyrics/config.toml` 配置
+- `~/.local/share/lyrics` 歌词地址
+- `~/.cache/lyrics` 日志位置
+
 
 终端歌词显示，使用 mpris 获取播放信息，自动下载歌词。
 
@@ -46,7 +49,7 @@ cargo install lyrics-next
 
 ## 配置
 
-配置文件 `~/.lyrics/lyrics.toml`
+配置文件 `~/.config/lyrics/config.toml`
 
 - player-filter 设置过滤黑名单和白名单
 - ui 设置显示区域

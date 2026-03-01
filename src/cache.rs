@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use sanitize_filename::sanitize;
 
-use crate::{config::cache_path, error::LyricsError, song::SongInfo};
+use crate::{config::lyrics_path, error::LyricsError, song::SongInfo};
 
 // 缓存管理模块
 #[derive(Debug, Clone, Default)]
@@ -13,7 +13,7 @@ pub struct CacheManager {
 impl CacheManager {
     pub fn new() -> Self {
         Self {
-            base_dir: cache_path(),
+            base_dir: lyrics_path(),
         }
     }
 

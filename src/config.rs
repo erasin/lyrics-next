@@ -126,13 +126,14 @@ impl Config {
     }
 }
 
-const CONFIG_PATH: &str = ".lyrics";
+const CONFIG_PATH: &str = "lyrics";
 
 pub fn config_path() -> PathBuf {
     let config_dir = dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("."))
+        .join(".config")
         .join(CONFIG_PATH)
-        .join("lyrics.toml");
+        .join("config.toml");
     ensure_parent_dir(&config_dir);
     config_dir
 }
@@ -140,15 +141,18 @@ pub fn config_path() -> PathBuf {
 pub fn log_path() -> PathBuf {
     let log_file = dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("."))
+        .join(".cache")
         .join(CONFIG_PATH);
     // .join("lyrics.log");
     ensure_parent_dir(&log_file);
     log_file
 }
 
-pub fn cache_path() -> PathBuf {
+pub fn lyrics_path() -> PathBuf {
     let cache_dir = dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("."))
+        .join(".local")
+        .join("share")
         .join(CONFIG_PATH);
     ensure_parent_dir(&cache_dir);
     cache_dir
